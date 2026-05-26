@@ -9,6 +9,41 @@ exports.getAll = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// Get labs with attendance summary
+exports.getLabsWithAttendance = async (req, res, next) => {
+  try {
+    const labs = await service.getLabsWithAttendance(req.user);
+    res.json({ data: labs });
+  } catch (err) { next(err); }
+};
+
+// Get specific lab attendance history
+exports.getLabAttendance = async (req, res, next) => {
+  try {
+    const { labId } = req.params;
+    const { search } = req.query;
+    const attendance = await service.getLabAttendance(req.user, labId, search);
+    res.json({ data: attendance });
+  } catch (err) { next(err); }
+};
+
+// Get department labs with attendance
+exports.getDepartmentLabsAttendance = async (req, res, next) => {
+  try {
+    const { departmentId } = req.params;
+    const labs = await service.getDepartmentLabsAttendance(req.user, departmentId);
+    res.json({ data: labs });
+  } catch (err) { next(err); }
+};
+
+// Get all departments with attendance (super admin only)
+exports.getAllDepartmentsAttendance = async (req, res, next) => {
+  try {
+    const departments = await service.getAllDepartmentsAttendance();
+    res.json({ data: departments });
+  } catch (err) { next(err); }
+};
+
 // Create kunjungan
 exports.create = async (req, res, next) => {
   try {

@@ -32,16 +32,27 @@ export default function Attendance() {
   const [activeAttendance, setActiveAttendance] = useState(null);
 
   // Lab attendance for admin
-  const [labAttendances, setLabAttendances] = useState([]);
+  const [labsWithAttendance, setLabsWithAttendance] = useState([]);
   const [selectedLabId, setSelectedLabId] = useState('');
+  const [selectedDepartmentId, setSelectedDepartmentId] = useState('');
+  
+  // Department and labs data
+  const [departments, setDepartments] = useState([]);
+  const [departmentLabsData, setDepartmentLabsData] = useState([]);
+  const [allDepartmentsData, setAllDepartmentsData] = useState([]);
 
   const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN_JURUSAN';
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const isAdminJurusan = user?.role === 'ADMIN_JURUSAN';
   const isUser = user?.role === 'USER';
 
   useEffect(() => {
     fetchLabs();
     fetchSchedules();
     fetchHistory();
+    if (isAdmin) {
+      fetchDepartments();
+    }
   }, []);
 
   const fetchLabs = async () => {
@@ -78,6 +89,54 @@ export default function Attendance() {
       setActiveAttendance(active);
     } catch (err) {
       setError('Failed to load history');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDepartments = async () => {
+    try {
+      const { data } = await api.get('/departments');
+      setDepartments(data.data || []);
+      if (isAdminJurusan && user.departmentId) {
+        setSelectedDepartmentId(user.departmentId);
+      }
+    } catch (err) {
+      console.error('Failed to fetch departments');
+    }
+  };
+
+  const fetchLabsWithAttendance = async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get('/attendance/labs/summary');
+      setLabsWithAttendance(data.data || []);
+    } catch (err) {
+      setError('Failed to load labs attendance');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDepartmentLabsAttendance = async (deptId) => {
+    setLoading(true);
+    try {
+      const { data } = await api.get(`/attendance/department/${deptId}`);
+      setDepartmentLabsData(data.data || []);
+    } catch (err) {
+      setError('Failed to load department labs attendance');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchAllDepartmentsAttendance = async () => {
+    setLoading(true);
+    try {
+      const { data } = await api.get('/attendance/admin/all-departments');
+      setAllDepartmentsData(data.data || []);
+    } catch (err) {
+      setError('Failed to load all departments attendance');
     } finally {
       setLoading(false);
     }
@@ -127,24 +186,19 @@ export default function Attendance() {
     }
   };
 
-  const fetchLabAttendance = async () => {
-    if (!selectedLabId) return;
-    setLoading(true);
-    try {
-      const { data } = await api.get(`/attendance/lab/${selectedLabId}`);
-      setLabAttendances(data.data || []);
-    } catch (err) {
-      setError('Failed to load lab attendance');
-    } finally {
-      setLoading(false);
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setError('');
+    setMessage('');
+    
+    if (tab === 'labs' && isAdmin) {
+      fetchLabsWithAttendance();
+    } else if (tab === 'department' && isAdminJurusan && selectedDepartmentId) {
+      fetchDepartmentLabsAttendance(selectedDepartmentId);
+    } else if (tab === 'all-departments' && isSuperAdmin) {
+      fetchAllDepartmentsAttendance();
     }
   };
-
-  useEffect(() => {
-    if (activeTab === 'lab' && selectedLabId) {
-      fetchLabAttendance();
-    }
-  }, [activeTab, selectedLabId]);
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -158,429 +212,357 @@ export default function Attendance() {
     });
   };
 
-  // Filter records based on search and status
-  const filteredRecords = records.filter(record => {
-    const matchesSearch = 
-      record.lab?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.schedule?.title?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = 
-      statusFilter === 'all' ||
-      (statusFilter === 'active' && !record.checkOutTime) ||
-      (statusFilter === 'completed' && record.checkOutTime);
-    
-    return matchesSearch && matchesStatus;
-  });
-
-  // Filter lab attendances
-  const filteredLabAttendances = labAttendances.filter(record => {
-    const matchesSearch = 
-      record.user?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.lab?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = 
-      statusFilter === 'all' ||
-      (statusFilter === 'active' && !record.checkOutTime) ||
-      (statusFilter === 'completed' && record.checkOutTime);
-    
-    return matchesSearch && matchesStatus;
-  });
-
-  // Export handlers
-  const handleExportCSV = () => {
-    const dataToExport = activeTab === 'history' ? filteredRecords : filteredLabAttendances;
-    const csvData = dataToExport.map(record => ({
-      'User': record.user?.name || '-',
-      'Lab': record.lab?.name || '-',
-      'Schedule': record.schedule?.title || '-',
-      'Check-in': formatDate(record.checkInTime),
-      'Check-out': record.checkOutTime ? formatDate(record.checkOutTime) : '-',
-      'Status': record.checkOutTime ? 'Completed' : 'Active',
-    }));
-    exportToCSV(csvData, `attendance-${activeTab}-${new Date().toISOString().split('T')[0]}.csv`);
+  const formatTime = (timeString) => {
+    if (!timeString) return '-';
+    const date = new Date(timeString);
+    return date.toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   };
 
-  const handlePrint = () => {
-    const dataToExport = activeTab === 'history' ? filteredRecords : filteredLabAttendances;
-    const headers = ['User', 'Lab', 'Schedule', 'Check-in', 'Check-out', 'Status'];
-    const rows = dataToExport.map(record => [
-      record.user?.name || '-',
-      record.lab?.name || '-',
-      record.schedule?.title || '-',
-      formatDate(record.checkInTime),
-      record.checkOutTime ? formatDate(record.checkOutTime) : '-',
-      record.checkOutTime ? 'Completed' : 'Active',
-    ]);
-    printReport(`Attendance Report - ${activeTab}`, headers, rows);
-  };
+  if (loading && activeTab !== 'checkin') return <LoadingSpinner />;
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={isUser ? "Kunjungan Lab" : "Attendance"}
-        description={isUser ? "Absensi masuk dan keluar laboratorium" : "Manage lab attendance"}
+        title="Attendance Lab"
+        description="Kelola check-in/check-out dan riwayat kunjungan lab"
       />
 
       {error && <ErrorMessage message={error} />}
       {message && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4">
+        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
           {message}
         </div>
       )}
 
-      {/* Active Attendance Alert */}
-      {activeAttendance && (
-        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-l-4 border-blue-500 p-4 rounded-lg shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-blue-900">
-                🔵 Anda sedang berada di: <strong>{activeAttendance.lab?.name || 'Lab'}</strong>
-              </p>
-              <p className="text-sm text-blue-700 mt-1">
-                Check-in: {formatDate(activeAttendance.checkInTime)}
-              </p>
-            </div>
-            <button
-              onClick={handleCheckOut}
-              disabled={loading}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors duration-200 font-medium shadow-sm"
-            >
-              Check-out Sekarang
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Tabs */}
-      <div className="flex space-x-4 mb-6 border-b border-gray-200">
-        <button
-          onClick={() => setActiveTab('checkin')}
-          className={`pb-3 px-4 text-sm font-medium transition-colors duration-200 ${
-            activeTab === 'checkin'
-              ? 'border-b-2 border-indigo-600 text-indigo-600'
-              : 'text-gray-500 hover:text-gray-700 hover:border-b-2 hover:border-gray-300'
-          }`}
-        >
-          {isUser ? 'Absensi' : 'Check-in / Out'}
-        </button>
-        <button
-          onClick={() => setActiveTab('history')}
-          className={`pb-3 px-4 text-sm font-medium transition-colors duration-200 ${
-            activeTab === 'history'
-              ? 'border-b-2 border-indigo-600 text-indigo-600'
-              : 'text-gray-500 hover:text-gray-700 hover:border-b-2 hover:border-gray-300'
-          }`}
-        >
-          {isUser ? 'Riwayat Kunjungan' : 'My History'}
-        </button>
-        {isAdmin && (
-          <button
-            onClick={() => setActiveTab('lab')}
-            className={`pb-3 px-4 text-sm font-medium transition-colors duration-200 ${
-              activeTab === 'lab'
-                ? 'border-b-2 border-indigo-600 text-indigo-600'
-                : 'text-gray-500 hover:text-gray-700 hover:border-b-2 hover:border-gray-300'
-            }`}
-          >
-            Lab Attendance
-          </button>
-        )}
-      </div>
-
-      {/* Check-in Tab */}
-      {activeTab === 'checkin' && (
-        <div className="bg-white shadow-md rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-6">
-            {activeAttendance ? 'Check-out dari Lab' : 'Check-in ke Lab'}
-          </h2>
-
-          {!activeAttendance ? (
-            <form onSubmit={handleCheckIn} className="max-w-md space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Pilih Lab *
-                </label>
-                <select
-                  required
-                  value={formData.labId}
-                  onChange={(e) => setFormData({ ...formData, labId: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
-                >
-                  <option value="">-- Pilih Lab --</option>
-                  {labs.map((lab) => (
-                    <option key={lab.id} value={lab.id}>
-                      {lab.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Jadwal (Opsional)
-                </label>
-                <select
-                  value={formData.scheduleId}
-                  onChange={(e) => setFormData({ ...formData, scheduleId: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
-                >
-                  <option value="">-- Tidak ada jadwal --</option>
-                  {schedules.map((schedule) => (
-                    <option key={schedule.id} value={schedule.id}>
-                      {schedule.lab?.name} - {schedule.startTime} ({schedule.title || 'Praktikum'})
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-500 mt-2">
-                  Pilih jadwal jika Anda mengikuti kelas praktikum
-                </p>
-              </div>
-
+      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+        <div className="flex flex-wrap border-b border-gray-200">
+          {isUser && (
+            <button
+              onClick={() => handleTabChange('checkin')}
+              className={`px-6 py-3 font-medium transition-colors ${
+                activeTab === 'checkin'
+                  ? 'border-b-2 border-purple-600 text-purple-600'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Check-in/Check-out
+            </button>
+          )}
+          
+          {isAdmin && (
+            <>
               <button
-                type="submit"
-                disabled={loading}
-                className="w-full px-4 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed font-medium shadow-md transition-all duration-200 transform hover:scale-[1.02]"
+                onClick={() => handleTabChange('labs')}
+                className={`px-6 py-3 font-medium transition-colors ${
+                  activeTab === 'labs'
+                    ? 'border-b-2 border-purple-600 text-purple-600'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
               >
-                {loading ? 'Memproses...' : '✓ Check-in Sekarang'}
+                📊 Lab Attendance
               </button>
-            </form>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-600 mb-4">
-                Anda sudah check-in. Gunakan tombol di atas untuk check-out.
-              </p>
-            </div>
-          )}
-        </div>
-      )}
 
-      {/* History Tab */}
-      {activeTab === 'history' && (
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          {/* Search and Filter */}
-          <div className="p-4 border-b border-gray-200 bg-gray-50">
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-              <SearchFilter
-                searchTerm={searchTerm}
-                onSearchChange={setSearchTerm}
-                placeholder="Search by lab, user, or schedule..."
-              />
-              <div className="flex gap-2 items-center">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+              {isAdminJurusan && (
+                <button
+                  onClick={() => handleTabChange('department')}
+                  className={`px-6 py-3 font-medium transition-colors ${
+                    activeTab === 'department'
+                      ? 'border-b-2 border-purple-600 text-purple-600'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
                 >
-                  <option value="all">All Status</option>
-                  <option value="active">Active</option>
-                  <option value="completed">Completed</option>
-                </select>
-                {isAdmin && (
-                  <>
-                    <button
-                      onClick={handleExportCSV}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm font-medium shadow-sm"
-                    >
-                      📥 Export CSV
-                    </button>
-                    <button
-                      onClick={handlePrint}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-medium shadow-sm"
-                    >
-                      🖨️ Print
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
+                  🏢 Department Labs
+                </button>
+              )}
 
-          {loading ? (
-            <div className="p-6">
-              <LoadingSpinner />
-            </div>
-          ) : filteredRecords.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">
-              {searchTerm || statusFilter !== 'all' 
-                ? 'Tidak ada data yang sesuai dengan filter'
-                : 'Belum ada riwayat kunjungan lab'}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gradient-to-r from-purple-600 to-indigo-600">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
-                      Lab
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
-                      Check-in
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
-                      Check-out
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredRecords.map((record) => (
-                    <tr key={record.id} className="hover:bg-gray-50 transition-colors duration-150">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {record.lab?.name || '-'}
-                        </div>
-                        {record.schedule && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            {record.schedule.title || 'Praktikum'}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {formatDate(record.checkInTime)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {record.checkOutTime ? formatDate(record.checkOutTime) : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <StatusBadge 
-                          status={record.checkOutTime ? 'completed' : 'active'} 
-                          type="attendance"
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+              {isSuperAdmin && (
+                <button
+                  onClick={() => handleTabChange('all-departments')}
+                  className={`px-6 py-3 font-medium transition-colors ${
+                    activeTab === 'all-departments'
+                      ? 'border-b-2 border-purple-600 text-purple-600'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  🏛️ All Departments
+                </button>
+              )}
+            </>
           )}
         </div>
-      )}
 
-      {/* Lab Attendance Tab (Admin Only) */}
-      {activeTab === 'lab' && isAdmin && (
-        <div className="bg-white shadow-md rounded-lg overflow-hidden">
-          <div className="p-6 border-b border-gray-200 bg-gray-50 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Select Lab
-              </label>
-              <select
-                value={selectedLabId}
-                onChange={(e) => setSelectedLabId(e.target.value)}
-                className="w-full max-w-md px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
-              >
-                <option value="">-- Select Lab --</option>
-                {labs.map((lab) => (
-                  <option key={lab.id} value={lab.id}>
-                    {lab.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+        {/* Tab Content */}
+        <div className="p-6">
+          {/* Check-in/Check-out Tab */}
+          {activeTab === 'checkin' && isUser && (
+            <div className="space-y-6">
+              {/* Check-in Form */}
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-6 border border-purple-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Check-in Lab</h3>
+                <form onSubmit={handleCheckIn} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Pilih Lab *
+                      </label>
+                      <select
+                        value={formData.labId}
+                        onChange={(e) => setFormData({ ...formData, labId: e.target.value })}
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="">-- Pilih Lab --</option>
+                        {labs.map(lab => (
+                          <option key={lab.id} value={lab.id}>
+                            {lab.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Jadwal (Opsional)
+                      </label>
+                      <select
+                        value={formData.scheduleId}
+                        onChange={(e) => setFormData({ ...formData, scheduleId: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      >
+                        <option value="">-- Pilih Jadwal --</option>
+                        {schedules.map(schedule => (
+                          <option key={schedule.id} value={schedule.id}>
+                            {schedule.title} ({schedule.startTime} - {schedule.endTime})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 transition-all"
+                  >
+                    {loading ? 'Processing...' : '✅ Check-in'}
+                  </button>
+                </form>
+              </div>
 
-            {selectedLabId && (
-              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                <SearchFilter
-                  searchTerm={searchTerm}
-                  onSearchChange={setSearchTerm}
-                  placeholder="Search by user or lab..."
-                />
-                <div className="flex gap-2 items-center">
-                  <select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
-                  >
-                    <option value="all">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="completed">Completed</option>
-                  </select>
-                  <button
-                    onClick={handleExportCSV}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 text-sm font-medium shadow-sm"
-                  >
-                    📥 Export CSV
-                  </button>
-                  <button
-                    onClick={handlePrint}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm font-medium shadow-sm"
-                  >
-                    🖨️ Print
-                  </button>
+              {/* Check-out Section */}
+              {activeAttendance && (
+                <div className="bg-blue-50 rounded-lg p-6 border border-blue-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Active Check-in</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div>
+                      <p className="text-sm text-gray-600">Lab</p>
+                      <p className="font-semibold text-gray-900">{activeAttendance.lab?.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Check-in Time</p>
+                      <p className="font-semibold text-gray-900">{formatTime(activeAttendance.checkInTime)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Duration</p>
+                      <p className="font-semibold text-gray-900">
+                        {activeAttendance.checkInTime ? 
+                          Math.floor((new Date() - new Date(activeAttendance.checkInTime)) / 60000) + ' min'
+                          : '-'
+                        }
+                      </p>
+                    </div>
+                    <div>
+                      <button
+                        onClick={handleCheckOut}
+                        disabled={loading}
+                        className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+                      >
+                        {loading ? 'Processing...' : '❌ Check-out'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* History */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Riwayat Kunjungan</h3>
+                <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Lab</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Check-in</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Check-out</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {records.length === 0 ? (
+                        <tr>
+                          <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
+                            Belum ada riwayat kunjungan
+                          </td>
+                        </tr>
+                      ) : (
+                        records.map(record => (
+                          <tr key={record.id} className="hover:bg-gray-50">
+                            <td className="px-6 py-4 text-sm text-gray-900">{record.lab?.name || '-'}</td>
+                            <td className="px-6 py-4 text-sm text-gray-600">{formatDate(record.checkInTime)}</td>
+                            <td className="px-6 py-4 text-sm text-gray-600">{record.checkOutTime ? formatDate(record.checkOutTime) : '-'}</td>
+                            <td className="px-6 py-4 text-sm">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                record.checkOutTime 
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}>
+                                {record.checkOutTime ? 'Completed' : 'Active'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
-          {loading ? (
-            <div className="p-6">
-              <LoadingSpinner />
+          {/* Labs Attendance Tab (Admin Jurusan & Super Admin) */}
+          {activeTab === 'labs' && isAdmin && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {labsWithAttendance.map(lab => (
+                  <div key={lab.id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg transition-shadow">
+                    <h4 className="font-semibold text-gray-900 mb-2">{lab.name}</h4>
+                    <p className="text-sm text-gray-600 mb-3">{lab.department?.name}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-2xl font-bold text-purple-600">{lab._count?.attendances || 0}</span>
+                      <span className="text-xs text-gray-500">visitors today</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedLabId(lab.id);
+                        setActiveTab('lab-detail');
+                      }}
+                      className="mt-4 w-full px-3 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                      View Details
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
-          ) : !selectedLabId ? (
-            <div className="p-6 text-center text-gray-500">
-              Please select a lab to view attendance records
-            </div>
-          ) : filteredLabAttendances.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">
-              {searchTerm || statusFilter !== 'all' 
-                ? 'No records match the current filters'
-                : 'No attendance records for this lab'}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gradient-to-r from-purple-600 to-indigo-600">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
-                      User
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
-                      Check-in
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
-                      Check-out
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-white uppercase tracking-wider">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredLabAttendances.map((record) => (
-                    <tr key={record.id} className="hover:bg-gray-50 transition-colors duration-150">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          {record.user?.name || '-'}
-                        </div>
-                        {record.user?.email && (
-                          <div className="text-xs text-gray-500 mt-1">
-                            {record.user.email}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {formatDate(record.checkInTime)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {record.checkOutTime ? formatDate(record.checkOutTime) : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <StatusBadge 
-                          status={record.checkOutTime ? 'completed' : 'active'} 
-                          type="attendance"
-                        />
-                      </td>
-                    </tr>
+          )}
+
+          {/* Department Labs Tab (Admin Jurusan) */}
+          {activeTab === 'department' && isAdminJurusan && (
+            <div className="space-y-6">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Pilih Departemen
+                </label>
+                <select
+                  value={selectedDepartmentId}
+                  onChange={(e) => {
+                    setSelectedDepartmentId(e.target.value);
+                    if (e.target.value) {
+                      fetchDepartmentLabsAttendance(e.target.value);
+                    }
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  {departments.map(dept => (
+                    <option key={dept.id} value={dept.id}>
+                      {dept.name}
+                    </option>
                   ))}
-                </tbody>
-              </table>
+                </select>
+              </div>
+
+              {departmentLabsData.map(lab => (
+                <div key={lab.id} className="bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h4 className="font-semibold text-gray-900">{lab.name}</h4>
+                      <p className="text-sm text-gray-600">Capacity: {lab.capacity || 'N/A'}</p>
+                    </div>
+                    <span className="text-2xl font-bold text-purple-600">{lab._count?.attendances || 0}</span>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">User</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Check-in</th>
+                          <th className="px-4 py-2 text-left text-xs font-medium text-gray-700">Check-out</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {lab.attendances?.length === 0 ? (
+                          <tr>
+                            <td colSpan="3" className="px-4 py-3 text-center text-gray-500">
+                              Belum ada kunjungan
+                            </td>
+                          </tr>
+                        ) : (
+                          lab.attendances?.map(att => (
+                            <tr key={att.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-2 text-gray-900">{att.user?.name}</td>
+                              <td className="px-4 py-2 text-gray-600">{formatTime(att.checkInTime)}</td>
+                              <td className="px-4 py-2 text-gray-600">{att.checkOutTime ? formatTime(att.checkOutTime) : '-'}</td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* All Departments Tab (Super Admin) */}
+          {activeTab === 'all-departments' && isSuperAdmin && (
+            <div className="space-y-6">
+              {allDepartmentsData.map(dept => (
+                <div key={dept.id} className="bg-white rounded-lg border border-gray-200 p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">{dept.name}</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {dept.labs?.map(lab => (
+                      <div key={lab.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                        <h4 className="font-semibold text-gray-900 mb-2">{lab.name}</h4>
+                        <p className="text-xs text-gray-600 mb-2">Capacity: {lab.capacity || 'N/A'}</p>
+                        <p className="text-sm font-bold text-purple-600 mb-3">{lab._count?.attendances || 0} visitors</p>
+                        
+                        <div className="max-h-40 overflow-y-auto">
+                          <div className="space-y-1 text-xs">
+                            {lab.attendances?.length === 0 ? (
+                              <p className="text-gray-500">No visitors</p>
+                            ) : (
+                              lab.attendances?.map(att => (
+                                <div key={att.id} className="flex justify-between text-gray-700">
+                                  <span>{att.user?.name}</span>
+                                  <span className="text-gray-500">{formatTime(att.checkInTime)}</span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

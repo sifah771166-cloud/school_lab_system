@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import api from '../config/axios';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import StatCard from '../components/ui/StatCard';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -17,6 +18,7 @@ export default function Dashboard() {
     const fetchData = async () => {
       try {
         if (isAdmin) {
+          // Fetch real stats from API
           const [labsRes, loansRes, attendanceRes] = await Promise.all([
             api.get('/labs'),
             api.get('/loans'),
@@ -41,6 +43,7 @@ export default function Dashboard() {
           });
         }
         
+        // Fetch today's schedules
         const { data } = await api.get('/schedules');
         const today = new Date().toISOString().split('T')[0];
         const todaySchedules = (data.data || []).filter(s => 
@@ -58,9 +61,11 @@ export default function Dashboard() {
 
   if (loading) return <LoadingSpinner />;
 
+  // Dashboard untuk USER
   if (isUser) {
     return (
       <div className="space-y-6 animate-fade-in">
+        {/* Welcome Header with Gradient */}
         <div className="relative overflow-hidden bg-gradient-to-br from-purple-600 via-pink-500 to-orange-500 rounded-2xl shadow-2xl p-8 text-white">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
           <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full -ml-32 -mb-32 blur-3xl"></div>
@@ -78,6 +83,7 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link to="/kunjungan" className="group">
             <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-300 hover:shadow-2xl card-hover">
@@ -125,6 +131,58 @@ export default function Dashboard() {
           </Link>
         </div>
 
+        {/* Info Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Pengumuman */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300 border border-gray-100 card-hover">
+            <div className="flex items-center mb-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center text-2xl shadow-lg">
+                📢
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 ml-4 gradient-text">Pengumuman</h3>
+            </div>
+            <div className="space-y-3 text-sm text-gray-600">
+              <div className="flex items-start p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                <span className="text-blue-500 mr-3 text-lg">•</span>
+                <p>Pastikan mengisi absensi kunjungan lab sebelum masuk</p>
+              </div>
+              <div className="flex items-start p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                <span className="text-blue-500 mr-3 text-lg">•</span>
+                <p>Peminjaman barang maksimal 7 hari</p>
+              </div>
+              <div className="flex items-start p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+                <span className="text-blue-500 mr-3 text-lg">•</span>
+                <p>Jaga kebersihan dan ketertiban laboratorium</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Informasi Penting */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition-all duration-300 border border-gray-100 card-hover">
+            <div className="flex items-center mb-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-teal-500 rounded-xl flex items-center justify-center text-2xl shadow-lg">
+                ℹ️
+              </div>
+              <h3 className="text-xl font-bold text-gray-800 ml-4 gradient-text">Informasi Penting</h3>
+            </div>
+            <div className="space-y-3 text-sm text-gray-600">
+              <div className="flex items-start p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                <span className="text-green-500 mr-3 text-lg">✓</span>
+                <p>Wajib mengisi form kunjungan setiap kali mengajar di lab</p>
+              </div>
+              <div className="flex items-start p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                <span className="text-green-500 mr-3 text-lg">✓</span>
+                <p>Peralatan yang dipinjam harus dikembalikan tepat waktu</p>
+              </div>
+              <div className="flex items-start p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+                <span className="text-green-500 mr-3 text-lg">✓</span>
+                <p>Hubungi admin jika ada kendala atau pertanyaan</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Jadwal Lab Hari Ini */}
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
           <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
             <span className="text-3xl mr-3">📅</span>
@@ -164,8 +222,10 @@ export default function Dashboard() {
     );
   }
 
+  // Dashboard untuk ADMIN
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Welcome Header */}
       <div className="relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-2xl shadow-2xl p-8 text-white">
         <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/10 rounded-full -ml-32 -mb-32 blur-3xl"></div>
@@ -178,6 +238,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl shadow-xl p-6 text-white transform hover:scale-105 transition-all duration-300 card-hover">
@@ -230,6 +291,7 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Jadwal Lab Hari Ini */}
       <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
         <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
           <span className="text-3xl mr-3">📅</span>
@@ -268,3 +330,11 @@ export default function Dashboard() {
     </div>
   );
 }
+              <div className="flex items-start">
+                <span className="text-green-500 text-xl mr-3">✓</span>
+                <p className="text-sm text-gray-700">Kembalikan alat dan bahan ke tempat semula setelah digunakan</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-start">
+                <span className="text-red-500 text-xl mr-3">✗</span>
