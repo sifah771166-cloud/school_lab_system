@@ -20,7 +20,7 @@ export default function Kunjungan() {
     classTeaching: '',
     startTime: '',
     endTime: '',
-    visitDate: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0]
   });
 
   // Search state
@@ -75,19 +75,19 @@ export default function Kunjungan() {
     }
   };
 
-  const handleEdit = (item) => {
+   const handleEdit = (item) => {
     setEditData(item);
     setForm({
       teacherName: item.teacherName,
       classTeaching: item.classTeaching,
       startTime: item.startTime,
       endTime: item.endTime,
-      visitDate: item.visitDate
+      date: item.date
     });
     setModalOpen(true);
   };
 
-  const handleCloseModal = () => {
+   const handleCloseModal = () => {
     setModalOpen(false);
     setEditData(null);
     setForm({
@@ -95,28 +95,28 @@ export default function Kunjungan() {
       classTeaching: '',
       startTime: '',
       endTime: '',
-      visitDate: new Date().toISOString().split('T')[0]
+      date: new Date().toISOString().split('T')[0]
     });
   };
 
-  const handleExportCSV = () => {
+   const handleExportCSV = () => {
     const csvData = filteredKunjungan.map(item => ({
       'Nama Guru': item.teacherName,
       'Kelas Diajar': item.classTeaching,
       'Jam Mulai': item.startTime,
       'Jam Selesai': item.endTime,
-      'Tanggal': new Date(item.visitDate).toLocaleDateString('id-ID')
+      'Tanggal': new Date(item.date).toLocaleDateString('id-ID')
     }));
     exportToCSV(csvData, 'kunjungan-lab');
   };
 
-  const handlePrint = () => {
+   const handlePrint = () => {
     const printData = filteredKunjungan.map(item => ({
       'Nama Guru': item.teacherName,
       'Kelas Diajar': item.classTeaching,
       'Jam Mulai': item.startTime,
       'Jam Selesai': item.endTime,
-      'Tanggal': new Date(item.visitDate).toLocaleDateString('id-ID')
+      'Tanggal': new Date(item.date).toLocaleDateString('id-ID')
     }));
     printReport('Laporan Kunjungan Lab', printData);
   };
@@ -232,9 +232,9 @@ export default function Kunjungan() {
                         {item.endTime}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {new Date(item.visitDate).toLocaleDateString('id-ID')}
-                    </td>
+                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                       {new Date(item.date).toLocaleDateString('id-ID')}
+                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex gap-2">
                         {(user.id === item.userId || isAdmin) && (
@@ -328,18 +328,18 @@ export default function Kunjungan() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tanggal <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  value={form.visitDate}
-                  onChange={(e) => setForm({ ...form, visitDate: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  required
-                />
-              </div>
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                   Tanggal <span className="text-red-500">*</span>
+                 </label>
+                 <input
+                   type="date"
+                   value={form.date}
+                   onChange={(e) => setForm({ ...form, date: e.target.value })}
+                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                   required
+                 />
+               </div>
 
               <div className="flex gap-3 pt-4">
                 <button

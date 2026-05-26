@@ -1,10 +1,19 @@
 const prisma = require('../../utils/prisma');
 
 exports.requestLoan = async (userId, data) => {
-  // Check item exists and quantity available (simplified)
+  // Check item exists and quantity available
   const item = await prisma.item.findUnique({ where: { id: data.itemId } });
   if (!item) throw new Error('Item not found');
-  // Optional: check quantity vs existing loans that are not returned
+  
+  // Check if requested quantity exceeds available stock
+  if (data.quantity > item.quantity) {
+    throw new Error(`Requested quantity (${data.quantity}) exceeds available stock (${item.quantity})`);
+  }
+  
+  if (data.quantity <= 0) {
+    throw new Error('Quantity must be greater than 0');
+  }
+  
   return prisma.loan.create({
     data: {
       userId,
@@ -23,11 +32,20 @@ exports.approveLoan = async (loanId, status, approverId, rejectionReason) => {
     include: { item: { include: { lab: true } } },
   });
   if (!loan) throw new Error('Loan not found');
+  
   // Check if approver has right to manage loans in that lab's department
   const user = await prisma.user.findUnique({ where: { id: approverId } });
+  if (!user) throw new Error('Approver not found');
+  
+  // Check department access - SUPER_ADMIN can approve all, ADMIN_JURUSAN only their department
+  if (user.role === 'ADMIN_JURUSAN' && !user.departmentId) {
+    throw new Error('Your account is not assigned to any department');
+  }
+  
   if (user.role !== 'SUPER_ADMIN' && loan.item.lab.departmentId !== user.departmentId) {
     throw new Error('Access denied');
   }
+  
   if (loan.status !== 'pending') throw new Error('Loan is not in pending state');
 
   return prisma.loan.update({

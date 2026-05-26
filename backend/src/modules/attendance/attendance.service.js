@@ -69,6 +69,9 @@ exports.update = async (id, user, data) => {
   // Admin jurusan can only edit kunjungan from their department
   if (user.role === 'ADMIN_JURUSAN') {
     const kunjunganUser = await prisma.user.findUnique({ where: { id: kunjungan.userId } });
+    if (!kunjunganUser) {
+      throw new Error('User tidak ditemukan');
+    }
     if (kunjunganUser.departmentId !== user.departmentId) {
       throw new Error('Anda tidak memiliki akses untuk mengedit kunjungan ini');
     }
@@ -108,6 +111,9 @@ exports.delete = async (id, user) => {
   // Admin jurusan can only delete kunjungan from their department
   if (user.role === 'ADMIN_JURUSAN') {
     const kunjunganUser = await prisma.user.findUnique({ where: { id: kunjungan.userId } });
+    if (!kunjunganUser) {
+      throw new Error('User tidak ditemukan');
+    }
     if (kunjunganUser.departmentId !== user.departmentId) {
       throw new Error('Anda tidak memiliki akses untuk menghapus kunjungan ini');
     }

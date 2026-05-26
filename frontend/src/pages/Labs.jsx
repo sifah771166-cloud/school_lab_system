@@ -66,7 +66,7 @@ export default function Labs() {
   };
 
   const openEdit = (lab) => {
-    setForm({ name: lab.name, description: lab.description || '', capacity: lab.capacity });
+    setForm({ name: lab.name, description: lab.description || '', capacity: lab.capacity || 0, departmentId: lab.departmentId });
     setEditData(lab);
     setModalOpen(true);
   };

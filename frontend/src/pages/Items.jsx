@@ -15,7 +15,7 @@ export default function Items() {
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editData, setEditData] = useState(null);
-  const [form, setForm] = useState({ name: '', description: '', quantity: 1, labId: '' });
+  const [form, setForm] = useState({ name: '', description: '', quantity: 1, category: '', condition: 'good', labId: '' });
   const [submitting, setSubmitting] = useState(false);
   
   // Search and filter states
@@ -52,7 +52,7 @@ export default function Items() {
   }, []);
 
   const openCreate = () => {
-    setForm({ name: '', description: '', quantity: 1, labId: '' });
+    setForm({ name: '', description: '', quantity: 1, category: '', condition: 'good', labId: '' });
     setEditData(null);
     setModalOpen(true);
   };
@@ -62,6 +62,8 @@ export default function Items() {
       name: item.name,
       description: item.description || '',
       quantity: item.quantity,
+      category: item.category || '',
+      condition: item.condition || 'good',
       labId: item.labId
     });
     setEditData(item);
@@ -354,6 +356,34 @@ export default function Items() {
                     onChange={handleChange}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
                   />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Category
+                  </label>
+                  <input
+                    type="text"
+                    name="category"
+                    value={form.category}
+                    onChange={handleChange}
+                    placeholder="e.g., Electronics, Tools, etc."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Condition
+                  </label>
+                  <select
+                    name="condition"
+                    value={form.condition}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-shadow"
+                  >
+                    <option value="good">Good</option>
+                    <option value="damaged">Damaged</option>
+                    <option value="missing">Missing</option>
+                  </select>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">

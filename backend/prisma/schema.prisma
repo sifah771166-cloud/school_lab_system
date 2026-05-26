@@ -46,6 +46,7 @@ model Lab {
   id            String   @id @default(uuid())
   name          String
   description   String?
+  capacity      Int      @default(0)
   departmentId  String
   department    Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
@@ -54,6 +55,7 @@ model Lab {
   // Relations
   items         Item[]
   schedules     Schedule[]
+  attendances   Attendance[]
 
   @@unique([name, departmentId])
   @@map("labs")
@@ -64,6 +66,8 @@ model Item {
   name        String
   description String?
   quantity    Int      @default(0)
+  category    String?  @default("general")
+  condition   String?  @default("good") // good, fair, poor
   labId       String
   lab         Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
@@ -95,11 +99,21 @@ model Attendance {
   id            String    @id @default(uuid())
   userId        String
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  teacherName   String    // Nama guru yang mengajar
-  classTeaching String    // Kelas yang diajar (e.g., "XII RPL 1")
-  startTime     String    // Jam mulai (HH:MM format)
-  endTime       String    // Jam selesai (HH:MM format)
-  date          String    // Tanggal kunjungan (YYYY-MM-DD)
+  
+  // Check-in/Check-out fields
+  labId         String?
+  lab           Lab?      @relation(fields: [labId], references: [id], onDelete: SetNull)
+  scheduleId    String?
+  checkInTime   DateTime?
+  checkOutTime  DateTime?
+  
+  // Kunjungan fields (for visit tracking)
+  teacherName   String?   // Nama guru yang mengajar
+  classTeaching String?   // Kelas yang diajar (e.g., "XII RPL 1")
+  startTime     String?   // Jam mulai (HH:MM format)
+  endTime       String?   // Jam selesai (HH:MM format)
+  date          String?   // Tanggal kunjungan (YYYY-MM-DD)
+  
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 

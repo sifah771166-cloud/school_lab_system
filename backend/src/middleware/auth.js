@@ -92,6 +92,10 @@ const checkDepartmentAccess = (resourceType) => {
             return res.status(404).json({ message: 'Item not found.' });
           }
 
+          if (!item.lab) {
+            return res.status(404).json({ message: 'Lab not found for this item.' });
+          }
+
           if (user.role === 'ADMIN_JURUSAN' && item.lab.departmentId !== user.departmentId) {
             return res.status(403).json({
               message: 'You can only access items in your department.',
