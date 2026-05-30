@@ -12,6 +12,8 @@ import Schedules from '../pages/Schedules';
 import Kunjungan from '../pages/Kunjungan';
 import Items from '../pages/Items';
 import Loans from '../pages/Loans';
+import Profile from '../pages/Profile';
+import Settings from '../pages/Settings';
 
 const router = createBrowserRouter([
   {
@@ -30,19 +32,28 @@ const router = createBrowserRouter([
         path: '/',
         element: <DashboardLayout />,
         children: [
-          {
-            index: true,
-            element: <Dashboard />,
-          },
-          // USER accessible routes
-          {
-            path: 'kunjungan',
-            element: <Kunjungan />,
-          },
-          {
-            path: 'loans',
-            element: <Loans />,
-          },
+           {
+             index: true,
+             element: <Dashboard />,
+           },
+           // Profile and Settings (accessible to all authenticated users)
+           {
+             path: 'profile',
+             element: <Profile />,
+           },
+           {
+             path: 'settings',
+             element: <Settings />,
+           },
+           // USER accessible routes
+           {
+             path: 'kunjungan',
+             element: <Kunjungan />,
+           },
+           {
+             path: 'loans',
+             element: <Loans />,
+           },
           // ADMIN_JURUSAN and SUPER_ADMIN only routes
           {
             element: <RoleProtectedRoute allowedRoles={['ADMIN_JURUSAN', 'SUPER_ADMIN']} />,
