@@ -1,9 +1,12 @@
 const prisma = require('../../utils/prisma');
 
-// Build filter: super_admin sees all, admin_jurusan sees items of his department's labs
+// Build filter: super_admin sees all, admin_jurusan and user see items of their department's labs
 const buildFilter = (user) => {
   if (user.role === 'SUPER_ADMIN') return {};
-  return { lab: { departmentId: user.departmentId } };
+  if (user.role === 'ADMIN_JURUSAN' || user.role === 'USER') {
+    return { lab: { departmentId: user.departmentId } };
+  }
+  return {};
 };
 
 exports.getAll = async (user) => {
