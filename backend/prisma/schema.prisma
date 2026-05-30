@@ -24,6 +24,7 @@ model User {
   loans         Loan[]
   loansApproved Loan[] @relation("LoanApprover")
   schedulesCreated Schedule[] @relation("ScheduleCreator")
+  notifications Notification[]
 
   @@map("users")
 }
@@ -139,4 +140,21 @@ model Loan {
   updatedAt   DateTime  @updatedAt
 
   @@map("loans")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("info") // info, success, warning, error
+  category  String   @default("general") // loan, attendance, schedule, system
+  read      Boolean  @default(false)
+  readAt    DateTime?
+  actionUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("notifications")
 }

@@ -14,6 +14,7 @@ const itemRoutes = require('./modules/items/items.routes');
 const scheduleRoutes = require('./modules/schedules/schedules.routes');
 const attendanceRoutes = require('./modules/attendance/attendance.routes');
 const loanRoutes = require('./modules/loans/loan.routes');
+const notificationRoutes = require('./modules/notifications/notification.routes');
 
 // Rate limiters
 const generalLimiter = rateLimit({
@@ -50,6 +51,7 @@ app.use('/api/v1/items', itemRoutes);
 app.use('/api/v1/schedules', scheduleRoutes);
 app.use('/api/v1/attendance', attendanceRoutes);
 app.use('/api/v1/loans', loanRoutes);
+app.use('/api/v1/notifications', notificationRoutes);
 
 // Health check
 app.get('/api/v1/health', (req, res) => res.status(200).json({ status: 'ok' }));

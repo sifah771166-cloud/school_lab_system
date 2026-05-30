@@ -1,11 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useAuth from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import NotificationCenter from '../NotificationCenter';
+import api from '../../config/axios';
 
 export default function Navbar({ onMenuClick }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    fetchUnreadCount();
+    // Poll for new notifications every 30 seconds
+    const interval = setInterval(fetchUnreadCount, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const response = await api.get('/notifications/unread/count');
+      setUnreadCount(response.data.unreadCount);
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -44,12 +64,21 @@ export default function Navbar({ onMenuClick }) {
       <div className="flex-1" /> {/* Spacer */}
 
       {/* Notifications */}
-      <button className="mr-4 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all relative">
+      <button 
+        onClick={() => setNotificationOpen(!notificationOpen)}
+        className="mr-4 p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all relative"
+      >
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
-        <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+        {unreadCount > 0 && (
+          <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 rounded-full animate-pulse flex items-center justify-center text-white text-xs font-bold">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
       </button>
+
+      <NotificationCenter isOpen={notificationOpen} onClose={() => setNotificationOpen(false)} />
 
       <div className="relative">
         <button
