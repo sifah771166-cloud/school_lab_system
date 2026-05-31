@@ -1,375 +1,434 @@
-# School Laboratory Management System
+# 🧪 School Laboratory Management System
 
-A modern, multi-department, role-based web application untuk mengelola laboratorium sekolah kejuruan dan universitas. Sistem ini mendukung manajemen lab, inventaris, jadwal, attendance (kunjungan), dan peminjaman barang dengan level akses super admin, admin jurusan, dan user.
+Sistem manajemen laboratorium sekolah yang modern, lengkap, dan mudah digunakan. Aplikasi ini mendukung multi-departemen dengan role-based access control untuk mengelola lab, inventaris, jadwal, kunjungan, dan peminjaman barang.
 
-## 🚀 Ringkasan
-- **Frontend:** React 18 + Vite + Tailwind CSS
-- **Backend:** Node.js + Express.js + Prisma + PostgreSQL
-- **Authentication:** JWT + bcrypt
-- **Deployment:** Docker + Docker Compose
-- **Role-based access control:** SUPER_ADMIN, ADMIN_JURUSAN, USER
-- **Multi-department support:** 7 jurusan dengan isolasi data per jurusan
+---
 
-## 📌 Status Saat Ini
-- Frontend: berjalan di `http://localhost`
-- Backend API: berjalan di `http://localhost:5001/api/v1`
-- PostgreSQL: berjalan di `localhost:5432`
-- Aplikasi sudah ter-deploy dengan Docker Compose dan siap dipakai
+## 📋 Daftar Isi
 
-## 🏗️ Arsitektur Sistem
+1. [Fitur Utama](#-fitur-utama)
+2. [Tech Stack](#-tech-stack)
+3. [Instalasi Cepat](#-instalasi-cepat)
+4. [Struktur Project](#-struktur-project)
+5. [Role & Permissions](#-role--permissions)
+6. [Panduan Lengkap](#-panduan-lengkap)
+7. [API Documentation](#-api-documentation)
+8. [Deployment](#-deployment)
+9. [Testing](#-testing)
+10. [Troubleshooting](#-troubleshooting)
 
-### Tech Stack
-| Layer | Technology | Keterangan |
-|-------|------------|------------|
-| Frontend | React 18 + Vite + Tailwind CSS | UI/UX modern dan responsive |
-| Backend | Node.js + Express.js | RESTful API |
-| Database | PostgreSQL | Penyimpanan data |
-| ORM | Prisma | Manajemen schema dan migration |
-| Auth | JWT + bcrypt | Otentikasi dan authorization |
-| Deployment | Docker + Docker Compose | Containerized environment |
+---
 
-### Struktur Database Singkat
-- `Users`: 27 akun total
-  - 1 SUPER_ADMIN
-  - 7 ADMIN_JURUSAN
-  - 19 USER
-- `Departments`: 7 jurusan
-- `Labs`: 20 lab total
-- `Items`: inventaris per lab
-- `Schedules`: jadwal penggunaan lab
-- `Attendance`: catatan kunjungan lab
-- `Loans`: peminjaman barang
+## 🚀 Fitur Utama
 
-## 🎯 Fitur Utama
-- Role-based access control (RBAC)
-- Multi-department / multi-lab support
-- CRUD labs, items, schedules, attendance, loans
-- JWT authentication + bcrypt password hashing
-- Validasi input backend dengan Zod
-- Proteksi route frontend menurut role
-## 🚀 Deployment ke Railway (Separate Projects)
+### ✅ Core Features
+- **Authentication** - Login, Register, Logout dengan JWT
+- **Role-Based Access Control** - 3 role (Super Admin, Admin Jurusan, User)
+- **User Profile** - Edit profile, ganti password
+- **Settings** - Konfigurasi notifikasi, tema, bahasa
 
-### Persiapan
-1. **Push kode ke GitHub**: Pastikan semua perubahan di-commit dan di-push ke repository GitHub Anda.
-2. **Buat akun Railway**: Daftar di [railway.app](https://railway.app) jika belum punya.
+### ✅ Manajemen Data
+- **Departments** - Kelola jurusan (Super Admin only)
+- **Labs** - Kelola laboratorium per jurusan
+- **Items** - Kelola inventaris per lab
+- **Schedules** - Kelola jadwal penggunaan lab
+- **Attendance/Kunjungan** - Catat kunjungan lab
+- **Loans/Peminjaman** - Ajukan dan kelola peminjaman barang
 
-### Deploy Database
-1. Di Railway dashboard, buat project baru (misal: "school-lab-db").
-2. Tambahkan PostgreSQL database.
-3. Catat DATABASE_URL dari environment variables (akan digunakan oleh backend).
+### ✅ User Experience
+- **Analytics Dashboard** - Visualisasi data dengan charts
+- **Notification System** - Notifikasi real-time dan email
+- **Advanced Search** - Pencarian cepat dengan autocomplete
+- **Export Reports** - Export ke CSV dan PDF
 
-### Deploy Backend
-1. Buat project baru di Railway (misal: "school-lab-backend").
-2. Connect ke GitHub repo Anda.
-3. Set root directory ke `backend/`.
-4. Set build command: `npm ci && npx prisma generate`
-5. Set start command: `npx prisma migrate deploy && npm start`
-6. Set environment variables:
-   - `NODE_ENV=production`
-   - `PORT=5000`
-   - `JWT_SECRET=<generate-random-secret-32-chars>`
-   - `JWT_EXPIRES_IN=7d`
-   - `DATABASE_URL=<dari-db-project>`
-   - `FRONTEND_URL=<url-frontend-project-nanti>`
-7. Deploy dan catat URL backend (misal: `https://school-lab-backend.up.railway.app`)
+### ✅ Security
+- **Audit Logging** - Track semua aktivitas user
+- **Session Management** - Kontrol session multi-device
+- **Token Security** - JWT dengan hashing
 
-### Deploy Frontend
-1. Buat project baru di Railway (misal: "school-lab-frontend").
-2. Connect ke GitHub repo Anda.
-3. Set root directory ke `frontend/`.
-4. Set build command: `npm ci && npm run build`
-5. Set start command: `npm start`
-6. Set environment variables:
-   - `NODE_ENV=production`
-   - `VITE_API_URL=<backend-url>/api/v1` (misal: `https://school-lab-backend.up.railway.app/api/v1`)
-7. Deploy.
+---
 
-### Konfigurasi Tambahan
-- **CORS**: Jika perlu, pastikan backend mengizinkan origin dari frontend URL.
-- **Health Check**: Backend punya endpoint `/api/v1/health` untuk monitoring.
-- **Database Sharing**: Railway memungkinkan share database antar projects dalam satu team.
+## 🛠️ Tech Stack
 
-### Akses Aplikasi
-- Frontend: URL dari project frontend (misal: `https://school-lab-frontend.up.railway.app`)
-- Backend API: URL dari project backend + `/api/v1`
+| Kategori | Teknologi | Versi |
+|----------|-----------|-------|
+| **Frontend** | React | 19.x |
+| | Vite | 8.x |
+| | Tailwind CSS | 4.x |
+| | React Router | 7.x |
+| | Recharts | 2.x |
+| **Backend** | Node.js | 18+ |
+| | Express.js | 4.x |
+| | Prisma ORM | 5.x |
+| | JWT | 9.x |
+| | Nodemailer | 6.x |
+| **Database** | PostgreSQL | 15+ |
+| **Deployment** | Docker | Latest |
+| | Docker Compose | Latest |
 
-### Troubleshooting
-- **Build gagal**: Cek logs di Railway dashboard.
-- **Database connection**: Pastikan DATABASE_URL benar dan database accessible.
-- **Frontend tidak connect ke backend**: Pastikan VITE_API_URL benar.
-- **Prisma migrate**: Jika migrate gagal, cek schema dan database permissions.
+---
 
-## 👥 Role & Permissions
+## ⚡ Instalasi Cepat
 
-### SUPER_ADMIN
-- Akses penuh ke seluruh sistem
-- Kelola semua departments, labs, items, schedules, attendance, loans
-- Buat user baru dan kelola semua akun
-- Full CRUD di semua modul
+### Prerequisites
+- Node.js 18+
+- PostgreSQL 15+
+- npm atau yarn
 
-### ADMIN_JURUSAN
-- Akses terbatas pada jurusan sendiri
-- Kelola lab, items, schedules, attendance, dan loans untuk jurusan sendiri
-- Tidak bisa mengakses data jurusan lain
-- Tidak bisa membuat user baru
+### Langkah Instalasi
 
-### USER
-- Akses personal terbatas
-- Melihat dashboard informasi
-- Melakukan kunjungan (attendance)
-- Mengajukan peminjaman barang (loans)
-- Tidak bisa akses halaman admin
-
-## 🔐 Kredensial Default
-Password akun sudah dibedakan per role dan per jurusan.
-
-### Super Admin
-- Email: `admin@school.com`
-- Password: `superadmin123`
-
-### Admin Jurusan (7 akun)
-- `admin.tkj@school.com` – TKJ / Password: `admintkj123`
-- `admin.dkv@school.com` – DKV / Password: `admindkv123`
-- `admin.bd@school.com` – BD / Password: `adminbd123`
-- `admin.dpib@school.com` – DPIB / Password: `admindpib123`
-- `admin.tkr@school.com` – TKR / Password: `admintkr123`
-- `admin.tsm@school.com` – TSM / Password: `admintsm123`
-- `admin.umum@school.com` – Lab Umum / Password: `adminumum123`
-
-### Sample Users per Lab
-- `usertkj1@school.com` / Password: `usertkj1`
-- `usertkj2@school.com` / Password: `usertkj2`
-- `usertkj3@school.com` / Password: `usertkj3`
-- `usertkj4@school.com` / Password: `usertkj4`
-- `userdkv1@school.com` / Password: `userdkv1`
-- `userdkv2@school.com` / Password: `userdkv2`
-- `userdkv3@school.com` / Password: `userdkv3`
-- `userdkv4@school.com` / Password: `userdkv4`
-- `userbd1@school.com` / Password: `userbd1`
-- `userbd2@school.com` / Password: `userbd2`
-- `userdpib1@school.com` / Password: `userdpib1`
-- `userdpib2@school.com` / Password: `userdpib2`
-- `usertkr1@school.com` / Password: `usertkr1`
-- `usertkr2@school.com` / Password: `usertkr2`
-- `usertkr3@school.com` / Password: `usertkr3`
-- `usertkr4@school.com` / Password: `usertkr4`
-- `usertsm1@school.com` / Password: `usertsm1`
-- `usertsm2@school.com` / Password: `usertsm2`
-- `userumum1@school.com` / Password: `userumum1`
-- `userumum2@school.com` / Password: `userumum2`
-
-## 🚀 Cara Menjalankan
-
-### Development Mode
 ```bash
-# Clone repository
-git clone https://github.com/sifah771166-cloud/school-lab-system.git
+# 1. Clone repository
+git clone https://github.com/your-username/school-lab-system.git
 cd school-lab-system
 
-# Setup environment
+# 2. Install dependencies
+npm run install-all
+
+# 3. Setup environment variables
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 
-# Install dependencies
-npm install
-npm --prefix backend install
-npm --prefix frontend install
+# 4. Edit backend/.env dengan konfigurasi database Anda
+# DATABASE_URL=postgresql://user:password@localhost:5432/school_lab
 
-# Start database
-docker-compose up -d postgres
-
-# Setup database
+# 5. Setup database
 cd backend
 npx prisma migrate deploy
+npx prisma generate
 npm run prisma:seed
+cd ..
 
-# Jalankan aplikasi
+# 6. Jalankan aplikasi
 npm run dev
 ```
 
-### Production Mode (Docker)
-```bash
-docker-compose up -d
+**Aplikasi akan berjalan di:**
+- Frontend: `http://localhost:5173`
+- Backend: `http://localhost:5000/api/v1`
+
+---
+
+## 📁 Struktur Project
+
+```
+school-lab-system/
+├── backend/                    # Backend API
+│   ├── prisma/
+│   │   ├── schema.prisma       # Database schema
+│   │   ├── seed.js             # Seed data
+│   │   └── migrations/         # Database migrations
+│   ├── src/
+│   │   ├── modules/
+│   │   │   ├── auth/           # Authentication
+│   │   │   ├── users/          # User management
+│   │   │   ├── departments/    # Department CRUD
+│   │   │   ├── labs/           # Lab CRUD
+│   │   │   ├── items/          # Item CRUD
+│   │   │   ├── schedules/      # Schedule CRUD
+│   │   │   ├── attendance/     # Attendance CRUD
+│   │   │   ├── loans/          # Loan CRUD
+│   │   │   ├── notifications/  # Notification system
+│   │   │   ├── audit/          # Audit logging
+│   │   │   └── search/         # Search functionality
+│   │   ├── middleware/         # Express middleware
+│   │   ├── utils/              # Utilities
+│   │   ├── config/             # Configuration
+│   │   ├── app.js              # Express app
+│   │   └── server.js           # Server entry
+│   └── package.json
+├── frontend/                   # Frontend React App
+│   ├── src/
+│   │   ├── components/         # React components
+│   │   │   ├── layout/         # Layout components
+│   │   │   └── ui/             # UI components
+│   │   ├── pages/              # Page components
+│   │   ├── routes/             # React Router config
+│   │   ├── services/           # API services
+│   │   ├── context/            # React Context
+│   │   ├── hooks/              # Custom hooks
+│   │   └── utils/              # Utilities
+│   ├── public/                 # Static files
+│   └── package.json
+├── docker-compose.yml          # Docker configuration
+├── package.json                # Root package.json
+└── README.md                   # This file
 ```
 
-### Hentikan layanan
-```bash
-docker-compose down
-```
+---
 
-### Restart layanan
-```bash
-docker-compose restart backend frontend
-```
+## 👥 Role & Permissions
 
-### Rebuild jika ada perubahan kode
-```bash
-docker-compose build --no-cache
-docker-compose up -d
-```
+### Super Admin
+**Akses penuh ke seluruh sistem**
+- ✅ Kelola semua departments, labs, items
+- ✅ Kelola semua user dan roles
+- ✅ Akses analytics dan reports
+- ✅ Lihat semua audit logs
+- ✅ Kelola sistem-wide settings
 
-### Menjalankan Seed Data
-```bash
-cd backend
-npm run prisma:seed
-```
+### Admin Jurusan
+**Akses terbatas pada jurusan sendiri**
+- ✅ Kelola labs di jurusan sendiri
+- ✅ Kelola items di labs jurusan sendiri
+- ✅ Kelola schedules untuk jurusan sendiri
+- ✅ Approve/reject loans untuk jurusan sendiri
+- ✅ Lihat attendance untuk jurusan sendiri
+- ❌ Tidak bisa buat user baru
+- ❌ Tidak bisa akses departments
 
-## ⚙️ Konfigurasi Environment
+### User
+**Akses personal terbatas**
+- ✅ Lihat dashboard informasi
+- ✅ Buat kunjungan (attendance)
+- ✅ Ajukan peminjaman (loans)
+- ✅ Edit profile sendiri
+- ✅ Lihat schedules
+- ❌ Tidak bisa akses halaman admin
 
-### Backend (.env)
+---
+
+## 📖 Panduan Lengkap
+
+### 1. Environment Variables
+
+#### Backend (.env)
 ```env
+# Server
 PORT=5000
 NODE_ENV=development
+
+# Database
 DATABASE_URL=postgresql://labadmin:labpass@localhost:5432/school_lab
-JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+
+# JWT
+JWT_SECRET=your-super-secret-jwt-key-min-32-characters
 JWT_EXPIRES_IN=7d
+
+# Frontend URL (for CORS)
 FRONTEND_URL=http://localhost:5173
+
+# Email (optional)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
 ```
 
-### Frontend (.env)
+#### Frontend (.env)
 ```env
 VITE_API_URL=http://localhost:5000/api/v1
 ```
 
-### Docker Environment
-Database credentials didefinisikan di `docker-compose.yml`:
-- Username: `labadmin`
-- Password: `labpass`
-- Database: `school_lab`
+### 2. Database Setup
 
-## 📡 API Endpoints
-
-### Authentication
-- `POST /api/v1/auth/login` - Login user
-- `POST /api/v1/auth/register` - Register user (SUPER_ADMIN only)
-
-### Departments
-- `GET /api/v1/departments` - List departments
-- `POST /api/v1/departments` - Create department
-- `PUT /api/v1/departments/:id` - Update department
-- `DELETE /api/v1/departments/:id` - Delete department
-
-### Labs
-- `GET /api/v1/labs` - List labs
-- `POST /api/v1/labs` - Create lab
-- `PUT /api/v1/labs/:id` - Update lab
-- `DELETE /api/v1/labs/:id` - Delete lab
-
-### Items
-- `GET /api/v1/items` - List items
-- `POST /api/v1/items` - Create item
-- `PUT /api/v1/items/:id` - Update item
-- `DELETE /api/v1/items/:id` - Delete item
-
-### Schedules
-- `GET /api/v1/schedules` - List schedules
-- `POST /api/v1/schedules` - Create schedule
-- `PUT /api/v1/schedules/:id` - Update schedule
-- `DELETE /api/v1/schedules/:id` - Delete schedule
-
-### Attendance
-- `GET /api/v1/attendance` - List attendance
-- `POST /api/v1/attendance` - Create attendance
-- `PUT /api/v1/attendance/:id` - Update attendance
-- `DELETE /api/v1/attendance/:id` - Delete attendance
-
-### Loans
-- `GET /api/v1/loans` - List loans
-- `POST /api/v1/loans` - Create loan
-- `PUT /api/v1/loans/:id` - Update loan
-- `DELETE /api/v1/loans/:id` - Delete loan
-```
-
-## 📁 Struktur Repository
-
-```
-school-lab-system/
-├── .gitignore
-├── README.md
-├── info.md
-├── docker-compose.yml
-├── package.json
-├── backend/
-│   ├── .env.example
-│   ├── dockerfile
-│   ├── package.json
-│   ├── prisma/
-│   │   ├── schema.prisma
-│   │   ├── seed.js
-│   │   └── migrations/
-│   └── src/
-│       ├── app.js
-│       ├── server.js
-│       ├── config/
-│       ├── middleware/
-│       ├── modules/
-│       └── utils/
-└── frontend/
-    ├── .env.example
-    ├── dockerfile
-    ├── package.json
-    ├── vite.config.js
-    ├── tailwind.config.js
-    └── src/
-        ├── App.jsx
-        ├── main.jsx
-        ├── components/
-        ├── pages/
-        ├── context/
-        ├── hooks/
-        ├── routes/
-        ├── services/
-        └── utils/
-```
-
-## 👥 Setup untuk Kolaborator
-
-Ketika orang lain clone repository ini:
-
-### 1. Setup Environment
 ```bash
-# Backend
-cd backend
-cp .env.example .env
-# Edit .env dengan database URL dan JWT secret
+# Create database
+createdb school_lab
 
-# Frontend
-cd ../frontend
-cp .env.example .env
-# Edit jika perlu
-```
-
-### 2. Install Dependencies
-```bash
-npm install
-npm --prefix backend install
-npm --prefix frontend install
-```
-
-### 3. Setup Database
-```bash
+# Run migrations
 cd backend
 npx prisma migrate deploy
+
+# Generate Prisma Client
+npx prisma generate
+
+# Seed initial data
 npm run prisma:seed
 ```
 
-### 4. Jalankan Aplikasi
+### 3. Development
+
 ```bash
+# Run both frontend and backend
 npm run dev
+
+# Run backend only
+npm run dev --prefix backend
+
+# Run frontend only
+npm run dev --prefix frontend
 ```
 
-## 🧪 Pengujian dan Verifikasi
-- Semua admin jurusan sudah diverifikasi sesuai role
-- Role isolation sudah diuji: admin tidak dapat akses data jurusan lain
-- Sidebar dan route telah disesuaikan dengan level akses
-- Fitur attendance, peminjaman, dan manajemen inventaris berfungsi
+### 4. Production Build
 
-## 🛠️ Troubleshooting
-
-### Database Connection Issues
 ```bash
-# Check if PostgreSQL is running
+# Build frontend
+npm run build --prefix frontend
+
+# Start production server
+npm start --prefix backend
+```
+
+---
+
+## 🔌 API Documentation
+
+### Authentication
+```
+POST   /api/v1/auth/login      - Login user
+POST   /api/v1/auth/register   - Register user (SUPER_ADMIN)
+```
+
+### Users
+```
+GET    /api/v1/users/me        - Get current user
+PUT    /api/v1/users/profile   - Update profile
+PUT    /api/v1/users/change-password - Change password
+```
+
+### Departments
+```
+GET    /api/v1/departments     - List departments
+POST   /api/v1/departments     - Create department
+PUT    /api/v1/departments/:id - Update department
+DELETE /api/v1/departments/:id - Delete department
+```
+
+### Labs
+```
+GET    /api/v1/labs            - List labs (filtered by role)
+POST   /api/v1/labs            - Create lab
+PUT    /api/v1/labs/:id        - Update lab
+DELETE /api/v1/labs/:id        - Delete lab
+```
+
+### Items
+```
+GET    /api/v1/items           - List items (filtered by role)
+POST   /api/v1/items           - Create item
+PUT    /api/v1/items/:id       - Update item
+DELETE /api/v1/items/:id       - Delete item
+```
+
+### Schedules
+```
+GET    /api/v1/schedules       - List schedules
+POST   /api/v1/schedules       - Create schedule
+PUT    /api/v1/schedules/:id   - Update schedule
+DELETE /api/v1/schedules/:id   - Delete schedule
+```
+
+### Attendance
+```
+GET    /api/v1/attendance      - List attendance
+POST   /api/v1/attendance      - Create attendance
+PUT    /api/v1/attendance/:id  - Update attendance
+DELETE /api/v1/attendance/:id  - Delete attendance
+```
+
+### Loans
+```
+GET    /api/v1/loans           - List loans (filtered by role)
+GET    /api/v1/loans/all       - List all loans (admin)
+POST   /api/v1/loans           - Create loan request
+PUT    /api/v1/loans/:id       - Update loan (approve/reject)
+DELETE /api/v1/loans/:id       - Delete loan
+```
+
+### Notifications
+```
+GET    /api/v1/notifications              - List notifications
+GET    /api/v1/notifications/unread/count  - Unread count
+PUT    /api/v1/notifications/:id/read      - Mark as read
+PUT    /api/v1/notifications/read/all      - Mark all as read
+DELETE /api/v1/notifications/:id           - Delete notification
+DELETE /api/v1/notifications/all           - Delete all
+```
+
+### Search
+```
+GET    /api/v1/search           - Global search
+GET    /api/v1/search/:module   - Module-specific search
+GET    /api/v1/search/autocomplete - Autocomplete suggestions
+```
+
+### Audit Logs
+```
+GET    /api/v1/audit            - List audit logs
+GET    /api/v1/audit/stats      - System statistics
+GET    /api/v1/audit/:id        - Get single log
+DELETE /api/v1/audit/cleanup    - Cleanup old logs
+```
+
+---
+
+## 🐳 Deployment
+
+### Docker Compose (Recommended)
+
+```bash
+# Build and start all services
+docker-compose up -d
+
+# Check status
 docker-compose ps
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+```
+
+### Manual Deployment
+
+#### Backend
+1. Set environment variables
+2. Run `npx prisma migrate deploy`
+3. Run `npm start`
+
+#### Frontend
+1. Set `VITE_API_URL` environment variable
+2. Run `npm run build`
+3. Serve `dist/` folder with nginx or similar
+
+---
+
+## 🧪 Testing
+
+### Default Test Accounts
+
+#### Super Admin
+```
+Email: admin@school.com
+Password: superadmin123
+```
+
+#### Admin Jurusan
+```
+TKJ: admin.tkj@school.com / admintkj123
+DKV: admin.dkv@school.com / admindkv123
+BD: admin.bd@school.com / adminbd123
+DPIB: admin.dpib@school.com / admindpib123
+TKR: admin.tkr@school.com / admintkr123
+TSM: admin.tsm@school.com / admintsm123
+UMUM: admin.umum@school.com / adminumum123
+```
+
+#### Regular Users
+```
+TKJ Users: usertkj1@school.com / usertkj1
+DKV Users: userdkv1@school.com / userdkv1
+(See seed.js for complete list)
+```
+
+### Test Scenarios
+1. **Authentication** - Login dengan berbagai role
+2. **Data Isolation** - Pastikan user hanya lihat data jurusan sendiri
+3. **CRUD Operations** - Test create, update, delete di semua modul
+4. **Search** - Test pencarian dengan berbagai keyword
+5. **Notifications** - Test real-time notifications
+6. **Export** - Test export CSV dan PDF
+
+---
+
+## 🔧 Troubleshooting
+
+### Database Connection Error
+```bash
+# Check PostgreSQL status
+docker-compose ps postgres
 
 # Restart database
 docker-compose restart postgres
@@ -377,53 +436,114 @@ docker-compose restart postgres
 # Reset database
 docker-compose down -v
 docker-compose up -d postgres
-cd backend
+cd backend && npx prisma migrate reset --force
+```
+
+### Port Already in Use
+```bash
+# Find process using port 5000
+lsof -i :5000        # Linux/Mac
+netstat -ano | findstr :5000  # Windows
+
+# Kill process atau ganti PORT di .env
+```
+
+### Prisma Errors
+```bash
+# Regenerate Prisma Client
+npx prisma generate
+
+# Reset database
 npx prisma migrate reset --force
 npm run prisma:seed
 ```
 
-### Port Conflicts
+### Email Not Working
 ```bash
-# Check port usage
-lsof -i :5000
-lsof -i :5173
+# Check email configuration in .env
+# Make sure SMTP credentials are correct
+# For Gmail, use App Password instead of regular password
 ```
 
-### Build Issues
-```bash
-# Clear caches
-rm -rf node_modules package-lock.json
-rm -rf backend/node_modules backend/package-lock.json
-rm -rf frontend/node_modules frontend/package-lock.json
+---
 
-# Reinstall
-npm install
-npm --prefix backend install
-npm --prefix frontend install
-```
+## 📊 Database Schema
 
-## 📈 Roadmap & Future Enhancements
+### Core Tables
+- **users** - User accounts (27 users seeded)
+- **departments** - 7 departments
+- **labs** - 20 labs
+- **items** - Inventory per lab
+- **schedules** - Lab usage schedules
+- **attendance** - Visit records
+- **loans** - Equipment loans
 
-### Phase 2 (Soon)
-- [ ] Email notifications untuk approvals
-- [ ] Dashboard analytics dengan charts
-- [ ] Bulk import/export data
-- [ ] API documentation dengan Swagger
-- [ ] Unit tests dan integration tests
+### System Tables
+- **notifications** - User notifications
+- **audit_logs** - Activity tracking
+- **sessions** - User sessions
 
-### Phase 3 (Future)
-- [ ] Mobile app companion
-- [ ] Real-time notifications
-- [ ] Advanced reporting
-- [ ] Integration dengan external systems
-- [ ] Multi-language support
+---
 
-## 📞 Support & Contact
-Untuk pertanyaan atau issue:
-- review README.md untuk setup instructions
-- gunakan GitHub Issues untuk bug
-- buat issue baru jika menemukan bug
+## 📈 Roadmap
+
+### ✅ Completed (Phase 1-3)
+- [x] Core CRUD operations
+- [x] Role-based access control
+- [x] Analytics dashboard
+- [x] Notification system
+- [x] Email notifications
+- [x] Advanced search
+- [x] Audit logging
+- [x] Session management
+
+### 🚧 In Progress (Phase 4)
+- [ ] Two-Factor Authentication (2FA)
+- [ ] Backup codes
+- [ ] QR code setup
+
+### 📋 Planned (Phase 5+)
+- [ ] Performance optimization
+- [ ] Redis caching
+- [ ] Mobile app (React Native)
+- [ ] PWA support
+- [ ] Multi-language
+
+---
+
+## 🤝 Contributing
+
+1. Fork repository
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License.
+
+---
+
+## 👨‍💻 Author
+
+**School Lab System Team**
+
+---
+
+## 🙏 Acknowledgments
+
+- React Team
+- Prisma Team
+- Tailwind CSS
+- All contributors
+
+---
 
 **Project Status**: ✅ **PRODUCTION READY**
 
-*Last updated: 8 Mei 2026*
+**Last Updated**: 31 Mei 2026
+
+**Version**: 2.0.0

@@ -25,6 +25,8 @@ model User {
   loansApproved Loan[] @relation("LoanApprover")
   schedulesCreated Schedule[] @relation("ScheduleCreator")
   notifications Notification[]
+  auditLogs     AuditLog[]
+  sessions      Session[]
 
   @@map("users")
 }
@@ -157,4 +159,45 @@ model Notification {
   updatedAt DateTime @updatedAt
 
   @@map("notifications")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action      String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, etc.
+  module      String   // users, labs, items, schedules, attendance, loans, etc.
+  entityId    String?  // ID of the affected entity
+  entityName  String?  // Name or title of the affected entity
+  oldValues   Json?    // Previous values (for UPDATE/DELETE)
+  newValues   Json?    // New values (for CREATE/UPDATE)
+  ipAddress   String?
+  userAgent   String?
+  description String?
+  status      String   @default("success") // success, failed
+  errorMessage String?
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([module])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token        String   @unique
+  ipAddress    String?
+  userAgent    String?
+  deviceInfo   String?
+  lastActivity DateTime @default(now())
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  
+  @@index([userId])
+  @@index([token])
+  @@map("sessions")
 }

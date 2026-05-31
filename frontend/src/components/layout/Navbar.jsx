@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import useAuth from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import NotificationCenter from '../NotificationCenter';
+import SearchBar from '../SearchBar';
 import api from '../../config/axios';
 
 export default function Navbar({ onMenuClick }) {
@@ -60,6 +61,13 @@ export default function Navbar({ onMenuClick }) {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
+
+      <div className="flex-1" /> {/* Spacer */}
+
+      {/* Search Bar */}
+      <div className="hidden md:block flex-1 max-w-md mx-4">
+        <SearchBar />
+      </div>
 
       <div className="flex-1" /> {/* Spacer */}
 

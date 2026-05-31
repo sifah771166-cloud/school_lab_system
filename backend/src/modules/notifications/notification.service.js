@@ -1,4 +1,5 @@
 const prisma = require('../../utils/prisma');
+const emailService = require('../../utils/emailService');
 
 exports.getNotifications = async (userId, filters = {}) => {
   const where = { userId };
@@ -28,7 +29,7 @@ exports.getUnreadCount = async (userId) => {
 };
 
 exports.createNotification = async (userId, data) => {
-  return prisma.notification.create({
+  const notification = await prisma.notification.create({
     data: {
       userId,
       title: data.title,
@@ -38,6 +39,30 @@ exports.createNotification = async (userId, data) => {
       actionUrl: data.actionUrl,
     },
   });
+
+  // Send email notification if configured
+  if (data.sendEmail) {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, name: true },
+      });
+
+      if (user) {
+        await emailService.sendNotificationEmail(user.email, {
+          title: data.title,
+          message: data.message,
+          type: data.type,
+          category: data.category,
+          data: data.emailData,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to send email notification:', error);
+    }
+  }
+
+  return notification;
 };
 
 exports.markAsRead = async (notificationId, userId) => {
