@@ -6,10 +6,17 @@
   "scripts": {
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
+    "dev:cached": "nodemon src/server.cached.js",
+    "start:cached": "node src/server.cached.js",
     "build": "echo 'Backend build complete'",
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:generate": "npx prisma generate",
-    "prisma:seed": "node prisma/seed.js"
+    "prisma:seed": "node prisma/seed.js",
+    "cache:stats": "node -e \"const { cache } = require('./src/config/redis'); cache.info().then(console.log).catch(console.error);\"",
+    "cache:flush": "node -e \"const { cache } = require('./src/config/redis'); cache.flushAll().then(() => console.log('Cache flushed')).catch(console.error);\"",
+    "cache:test": "node scripts/test-cache.js",
+    "test:cached": "npm run cache:test && echo 'Cache tests completed'",
+    "test:api:performance": "node scripts/test-api-performance.js"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
