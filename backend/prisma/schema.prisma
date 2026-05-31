@@ -17,6 +17,9 @@ model User {
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
   profilePhoto     String?
+  twoFactorEnabled Boolean            @default(false)
+  twoFactorSecret  String?
+  backupCodes      BackupCode[]
   attendances      Attendance[]
   loansApproved    Loan[]             @relation("LoanApprover")
   loans            Loan[]
@@ -266,4 +269,18 @@ model RepairRequest {
   @@index([status])
   @@index([priority])
   @@map("repair_requests")
+}
+
+model BackupCode {
+  id        String   @id @default(uuid())
+  userId    String
+  code      String   @unique
+  used      Boolean  @default(false)
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([code])
+  @@map("backup_codes")
 }

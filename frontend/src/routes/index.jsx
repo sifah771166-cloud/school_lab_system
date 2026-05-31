@@ -18,6 +18,8 @@ import Analytics from '../pages/Analytics';
 import AdvancedAnalytics from '../pages/AdvancedAnalytics';
 import QRCheckIn from '../pages/QRCheckIn';
 import QRCodes from '../pages/QRCodes';
+import TwoFactorSetup from '../pages/TwoFactorSetup';
+import TwoFactorVerify from '../pages/TwoFactorVerify';
 
 const router = createBrowserRouter([
   {
@@ -27,6 +29,10 @@ const router = createBrowserRouter([
   {
     path: '/register',
     element: <Register />,
+  },
+  {
+    path: '/2fa-verify',
+    element: <TwoFactorVerify />,
   },
   {
     // Protected routes wrapper
@@ -48,6 +54,10 @@ const router = createBrowserRouter([
            {
              path: 'settings',
              element: <Settings />,
+           },
+           {
+             path: '2fa-setup',
+             element: <TwoFactorSetup />,
            },
            {
              path: 'analytics',

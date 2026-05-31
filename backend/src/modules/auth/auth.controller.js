@@ -17,3 +17,19 @@ exports.login = async (req, res, next) => {
     next(error);
   }
 };
+
+// Complete login after 2FA verification
+exports.loginAfter2FA = async (req, res, next) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    const data = await authService.completeLogin(userId);
+    res.json(data);
+  } catch (error) {
+    next(error);
+  }
+};

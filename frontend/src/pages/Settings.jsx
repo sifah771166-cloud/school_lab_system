@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import PageHeader from '../components/ui/PageHeader';
 import toast from 'react-hot-toast';
+import axios from 'axios';
 
 export default function Settings() {
+  const navigate = useNavigate();
   const [settings, setSettings] = useState({
     notifications: {
       email: true,
@@ -19,8 +22,30 @@ export default function Settings() {
     },
   });
 
+  const [twoFAStatus, setTwoFAStatus] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  const API_URL = import.meta.env.VITE_API_URL;
+  const token = localStorage.getItem('token');
+
+  useEffect(() => {
+    const fetchTwoFAStatus = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/auth/2fa/status`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setTwoFAStatus(response.data.data);
+      } catch (err) {
+        console.error('Failed to fetch 2FA status:', err);
+      }
+    };
+
+    if (token) {
+      fetchTwoFAStatus();
+    }
+  }, [token, API_URL]);
+
   const handleSaveSettings = () => {
-    // Save to localStorage for now
     localStorage.setItem('appSettings', JSON.stringify(settings));
     toast.success('Settings saved successfully');
   };
@@ -44,6 +69,58 @@ export default function Settings() {
     setSettings(defaultSettings);
     localStorage.setItem('appSettings', JSON.stringify(defaultSettings));
     toast.success('Settings reset to default');
+  };
+
+  const handleSetup2FA = () => {
+    navigate('/2fa-setup');
+  };
+
+  const handleDisable2FA = async () => {
+    const password = prompt('Enter your password to disable 2FA:');
+    if (!password) return;
+
+    try {
+      setLoading(true);
+      await axios.post(
+        `${API_URL}/auth/2fa/disable`,
+        { password },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setTwoFAStatus({ enabled: false, backupCodesRemaining: 0 });
+      toast.success('2FA disabled successfully');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to disable 2FA');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegenerateBackupCodes = async () => {
+    const password = prompt('Enter your password to regenerate backup codes:');
+    if (!password) return;
+
+    try {
+      setLoading(true);
+      const response = await axios.post(
+        `${API_URL}/auth/2fa/backup-codes/regenerate`,
+        { password },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      const codes = response.data.data.backupCodes;
+      const codesText = codes.join('\n');
+      navigator.clipboard.writeText(codesText);
+      toast.success('Backup codes regenerated and copied to clipboard');
+      
+      const statusResponse = await axios.get(`${API_URL}/auth/2fa/status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTwoFAStatus(statusResponse.data.data);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to regenerate backup codes');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -125,6 +202,80 @@ export default function Settings() {
                 <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
               </label>
             </div>
+          </div>
+        </div>
+
+        {/* Security Settings - 2FA */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="flex items-center mb-6">
+            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mr-3">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Security</h3>
+              <p className="text-sm text-gray-600">Manage your account security</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {twoFAStatus && (
+              <>
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-900">Two-Factor Authentication</p>
+                    <p className="text-sm text-gray-600">
+                      {twoFAStatus.enabled ? 'Enabled' : 'Disabled'}
+                    </p>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                    twoFAStatus.enabled 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {twoFAStatus.enabled ? '✓ Active' : 'Inactive'}
+                  </div>
+                </div>
+
+                {twoFAStatus.enabled && (
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-sm text-blue-800">
+                      Backup codes remaining: <span className="font-semibold">{twoFAStatus.backupCodesRemaining}</span>
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  {!twoFAStatus.enabled ? (
+                    <button
+                      onClick={handleSetup2FA}
+                      disabled={loading}
+                      className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium disabled:opacity-50"
+                    >
+                      Enable 2FA
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleRegenerateBackupCodes}
+                        disabled={loading}
+                        className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50"
+                      >
+                        Regenerate Codes
+                      </button>
+                      <button
+                        onClick={handleDisable2FA}
+                        disabled={loading}
+                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium disabled:opacity-50"
+                      >
+                        Disable 2FA
+                      </button>
+                    </>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -235,7 +386,7 @@ export default function Settings() {
         </div>
 
         {/* System Information */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 lg:col-span-2">
           <div className="flex items-center mb-6">
             <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center mr-3">
               <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -251,7 +402,7 @@ export default function Settings() {
           <div className="space-y-3 text-sm">
             <div className="flex justify-between py-2 border-b border-gray-100">
               <span className="text-gray-600">Version:</span>
-              <span className="text-gray-900 font-medium">1.0.0</span>
+              <span className="text-gray-900 font-medium">2.0.0</span>
             </div>
             <div className="flex justify-between py-2 border-b border-gray-100">
               <span className="text-gray-600">Last Updated:</span>
@@ -263,7 +414,7 @@ export default function Settings() {
             </div>
             <div className="flex justify-between py-2">
               <span className="text-gray-600">Build:</span>
-              <span className="text-gray-900 font-medium font-mono text-xs">f5666ff</span>
+              <span className="text-gray-900 font-medium font-mono text-xs">phase-4-2fa</span>
             </div>
           </div>
         </div>

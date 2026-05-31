@@ -37,7 +37,19 @@ exports.register = async ({ email, password, name, role, departmentId }) => {
 };
 
 exports.login = async ({ email, password }) => {
-  const user = await prisma.user.findUnique({ where: { email } });
+  const user = await prisma.user.findUnique({ 
+    where: { email },
+    select: {
+      id: true,
+      email: true,
+      password: true,
+      name: true,
+      role: true,
+      departmentId: true,
+      twoFactorEnabled: true
+    }
+  });
+  
   if (!user) {
     const err = new Error('Invalid email or password');
     err.statusCode = 401;
@@ -51,6 +63,16 @@ exports.login = async ({ email, password }) => {
     throw err;
   }
 
+  // If 2FA is enabled, return user ID for 2FA verification
+  if (user.twoFactorEnabled) {
+    return {
+      requiresTwoFA: true,
+      userId: user.id,
+      email: user.email,
+      message: 'Please verify with 2FA'
+    };
+  }
+
   const token = signToken({ userId: user.id, id: user.id, role: user.role });
 
   return {
@@ -62,5 +84,32 @@ exports.login = async ({ email, password }) => {
       role: user.role,
       departmentId: user.departmentId,
     },
+  };
+};
+
+// Complete login after 2FA verification
+exports.completeLogin = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      departmentId: true
+    }
+  });
+
+  if (!user) {
+    const err = new Error('User not found');
+    err.statusCode = 404;
+    throw err;
+  }
+
+  const token = signToken({ userId: user.id, id: user.id, role: user.role });
+
+  return {
+    token,
+    user
   };
 };
