@@ -518,7 +518,7 @@ npm run prisma:seed
 
 ## 📈 Roadmap
 
-### ✅ Completed (Phase 1-3)
+### ✅ Completed (Phase 1-4)
 - [x] Core CRUD operations
 - [x] Role-based access control
 - [x] Analytics dashboard
@@ -527,18 +527,31 @@ npm run prisma:seed
 - [x] Advanced search
 - [x] Audit logging
 - [x] Session management
+- [x] QR code system
+- [x] PWA support
+- [x] WebSocket integration
+- [x] Two-Factor Authentication (2FA)
+- [x] Backup codes for recovery
+- [x] Enhanced security features
 
-### 🚧 In Progress (Phase 4)
-- [ ] Two-Factor Authentication (2FA)
-- [ ] Backup codes
-- [ ] QR code setup
+### ✅ Completed (Phase 5.1)
+- [x] Code splitting & lazy loading
+- [x] Database optimization (24 indexes)
+- [x] Bundle size reduction (76%)
+- [x] Build time improvement (42%)
+- [x] Performance optimization
 
-### 📋 Planned (Phase 5+)
-- [ ] Performance optimization
+### 🚧 In Progress (Phase 5.2)
 - [ ] Redis caching
+- [ ] Session storage optimization
+- [ ] API response caching
+
+### 📋 Planned (Phase 5.3+)
+- [ ] Multi-language support (i18n)
 - [ ] Mobile app (React Native)
-- [ ] PWA support
-- [ ] Multi-language
+- [ ] Advanced PWA features
+- [ ] Image optimization
+- [ ] Service Worker enhancements
 
 ---
 
@@ -577,4 +590,11 @@ This project is licensed under the MIT License.
 
 **Last Updated**: 31 Mei 2026
 
-**Version**: 2.0.0
+**Version**: 2.1.0
+
+**Latest Features**:
+- ✅ Two-Factor Authentication (2FA)
+- ✅ Code Splitting & Lazy Loading
+- ✅ Database Performance Optimization
+- ✅ 76% Bundle Size Reduction
+- ✅ 42% Build Time Improvement
