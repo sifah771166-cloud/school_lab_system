@@ -25,6 +25,8 @@ model User {
   teacher_qr_codes teacher_qr_codes[]
   auditLogs        AuditLog[]
   sessions         Session[]
+  maintenanceRecords MaintenanceRecord[] @relation("MaintenancePerformer")
+  repairRequests   RepairRequest[]
   department       Department?        @relation(fields: [departmentId], references: [id])
 
   @@map("users")
@@ -70,8 +72,14 @@ model Item {
   updatedAt   DateTime @updatedAt
   category    String?  @default("general")
   condition   String?  @default("good")
+  purchaseDate DateTime?
+  warrantyExpiry DateTime?
+  lastMaintenanceDate DateTime?
+  nextMaintenanceDate DateTime?
   lab         Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
   loans       Loan[]
+  maintenanceRecords MaintenanceRecord[]
+  repairRequests RepairRequest[]
 
   @@map("items")
 }
@@ -211,4 +219,51 @@ model Session {
   @@index([userId])
   @@index([token])
   @@map("sessions")
+}
+
+model MaintenanceRecord {
+  id              String    @id @default(uuid())
+  itemId          String
+  maintenanceType String    // "preventive", "corrective", "inspection"
+  description     String
+  performedBy     String
+  performedDate   DateTime
+  nextDueDate     DateTime?
+  cost            Float?    @default(0)
+  status          String    @default("completed") // "scheduled", "in_progress", "completed", "cancelled"
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  item            Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  performer       User      @relation("MaintenancePerformer", fields: [performedBy], references: [id])
+
+  @@index([itemId])
+  @@index([performedBy])
+  @@index([status])
+  @@index([performedDate])
+  @@map("maintenance_records")
+}
+
+model RepairRequest {
+  id              String    @id @default(uuid())
+  itemId          String
+  requestedBy     String
+  issueDescription String
+  priority        String    @default("medium") // "low", "medium", "high", "urgent"
+  status          String    @default("pending") // "pending", "approved", "in_progress", "completed", "rejected"
+  estimatedCost   Float?
+  actualCost      Float?
+  assignedTo      String?
+  completedAt     DateTime?
+  rejectionReason String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  item            Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  requester       User      @relation(fields: [requestedBy], references: [id])
+
+  @@index([itemId])
+  @@index([requestedBy])
+  @@index([status])
+  @@index([priority])
+  @@map("repair_requests")
 }

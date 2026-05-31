@@ -51,7 +51,7 @@ exports.login = async ({ email, password }) => {
     throw err;
   }
 
-  const token = signToken({ id: user.id, role: user.role });
+  const token = signToken({ userId: user.id, id: user.id, role: user.role });
 
   return {
     token,
@@ -60,6 +60,7 @@ exports.login = async ({ email, password }) => {
       email: user.email,
       name: user.name,
       role: user.role,
+      departmentId: user.departmentId,
     },
   };
 };

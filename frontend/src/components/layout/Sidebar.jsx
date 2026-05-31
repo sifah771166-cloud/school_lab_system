@@ -8,6 +8,7 @@ const getNavigationByRole = (role) => {
   if (role === 'USER') {
     return [
       { name: 'Dashboard', href: '/', icon: '📊', gradient: 'from-blue-500 to-cyan-500' },
+      { name: 'QR Check-In', href: '/qr-checkin', icon: '📱', gradient: 'from-teal-500 to-green-500' },
       { name: 'Kunjungan', href: '/kunjungan', icon: '👥', gradient: 'from-purple-500 to-pink-500' },
       { name: 'Peminjaman', href: '/loans', icon: '📋', gradient: 'from-green-500 to-teal-500' },
     ];
@@ -18,11 +19,13 @@ const getNavigationByRole = (role) => {
     return [
       { name: 'Dashboard', href: '/', icon: '📊', gradient: 'from-blue-500 to-cyan-500' },
       { name: 'Analytics', href: '/analytics', icon: '📈', gradient: 'from-cyan-500 to-blue-500' },
+      { name: 'QR Check-In', href: '/qr-checkin', icon: '📱', gradient: 'from-teal-500 to-green-500' },
       { name: 'Kunjungan', href: '/kunjungan', icon: '👥', gradient: 'from-purple-500 to-pink-500' },
       { name: 'Peminjaman', href: '/loans', icon: '📋', gradient: 'from-green-500 to-teal-500' },
       { name: 'Labs', href: '/labs', icon: '🧪', gradient: 'from-orange-500 to-red-500' },
       { name: 'Items', href: '/items', icon: '📦', gradient: 'from-yellow-500 to-orange-500' },
       { name: 'Schedules', href: '/schedules', icon: '📅', gradient: 'from-indigo-500 to-purple-500' },
+      { name: 'QR Codes', href: '/qr-codes', icon: '🔲', gradient: 'from-pink-500 to-purple-500' },
     ];
   }
 
@@ -31,18 +34,21 @@ const getNavigationByRole = (role) => {
     return [
       { name: 'Dashboard', href: '/', icon: '📊', gradient: 'from-blue-500 to-cyan-500' },
       { name: 'Analytics', href: '/analytics', icon: '📈', gradient: 'from-cyan-500 to-blue-500' },
+      { name: 'QR Check-In', href: '/qr-checkin', icon: '📱', gradient: 'from-teal-500 to-green-500' },
       { name: 'Kunjungan', href: '/kunjungan', icon: '👥', gradient: 'from-purple-500 to-pink-500' },
       { name: 'Peminjaman', href: '/loans', icon: '📋', gradient: 'from-green-500 to-teal-500' },
       { name: 'Departments', href: '/departments', icon: '🏫', gradient: 'from-pink-500 to-rose-500' },
       { name: 'Labs', href: '/labs', icon: '🧪', gradient: 'from-orange-500 to-red-500' },
       { name: 'Items', href: '/items', icon: '📦', gradient: 'from-yellow-500 to-orange-500' },
       { name: 'Schedules', href: '/schedules', icon: '📅', gradient: 'from-indigo-500 to-purple-500' },
+      { name: 'QR Codes', href: '/qr-codes', icon: '🔲', gradient: 'from-pink-500 to-purple-500' },
     ];
   }
 
   // Default fallback untuk USER
   return [
     { name: 'Dashboard', href: '/', icon: '📊', gradient: 'from-blue-500 to-cyan-500' },
+    { name: 'QR Check-In', href: '/qr-checkin', icon: '📱', gradient: 'from-teal-500 to-green-500' },
     { name: 'Kunjungan', href: '/kunjungan', icon: '👥', gradient: 'from-purple-500 to-pink-500' },
     { name: 'Peminjaman', href: '/loans', icon: '📋', gradient: 'from-green-500 to-teal-500' },
   ];

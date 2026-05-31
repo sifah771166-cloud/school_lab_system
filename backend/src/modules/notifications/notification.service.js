@@ -1,5 +1,6 @@
 const prisma = require('../../utils/prisma');
 const emailService = require('../../utils/emailService');
+const { emitNotificationToUser, emitNotificationToDepartment, emitNotificationToRole } = require('../../socket/socket');
 
 exports.getNotifications = async (userId, filters = {}) => {
   const where = { userId };
@@ -38,6 +39,13 @@ exports.createNotification = async (userId, data) => {
       link: data.actionUrl || data.link,
     },
   });
+
+  // Emit real-time notification via WebSocket
+  try {
+    emitNotificationToUser(userId, notification);
+  } catch (error) {
+    console.error('Failed to emit WebSocket notification:', error);
+  }
 
   // Send email notification if configured
   if (data.sendEmail) {
@@ -122,7 +130,7 @@ exports.deleteAllNotifications = async (userId) => {
 
 // Helper function to send notifications to multiple users
 exports.sendNotificationToUsers = async (userIds, data) => {
-  return prisma.notification.createMany({
+  const notifications = await prisma.notification.createMany({
     data: userIds.map(userId => ({
       userId,
       title: data.title,
@@ -131,6 +139,26 @@ exports.sendNotificationToUsers = async (userIds, data) => {
       link: data.actionUrl || data.link,
     })),
   });
+
+  // Emit real-time notifications to all users
+  try {
+    for (const userId of userIds) {
+      const notification = {
+        userId,
+        title: data.title,
+        message: data.message,
+        type: data.type || 'info',
+        link: data.actionUrl || data.link,
+        createdAt: new Date(),
+        isRead: false
+      };
+      emitNotificationToUser(userId, notification);
+    }
+  } catch (error) {
+    console.error('Failed to emit WebSocket notifications:', error);
+  }
+
+  return notifications;
 };
 
 // Helper function to send notification to department
@@ -141,5 +169,23 @@ exports.sendNotificationToDepartment = async (departmentId, data) => {
   });
 
   const userIds = users.map(u => u.id);
-  return exports.sendNotificationToUsers(userIds, data);
+  
+  // Create notifications in database
+  const notifications = await exports.sendNotificationToUsers(userIds, data);
+
+  // Emit to department room
+  try {
+    emitNotificationToDepartment(departmentId, {
+      title: data.title,
+      message: data.message,
+      type: data.type || 'info',
+      link: data.actionUrl || data.link,
+      createdAt: new Date(),
+      isRead: false
+    });
+  } catch (error) {
+    console.error('Failed to emit department notification:', error);
+  }
+
+  return notifications;
 };

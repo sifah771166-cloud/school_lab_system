@@ -15,6 +15,9 @@ import Loans from '../pages/Loans';
 import Profile from '../pages/Profile';
 import Settings from '../pages/Settings';
 import Analytics from '../pages/Analytics';
+import AdvancedAnalytics from '../pages/AdvancedAnalytics';
+import QRCheckIn from '../pages/QRCheckIn';
+import QRCodes from '../pages/QRCodes';
 
 const router = createBrowserRouter([
   {
@@ -46,11 +49,16 @@ const router = createBrowserRouter([
              path: 'settings',
              element: <Settings />,
            },
-            {
-              path: 'analytics',
-              element: <Analytics />,
-            },
-            // USER accessible routes
+           {
+             path: 'analytics',
+             element: <AdvancedAnalytics />,
+           },
+           // QR Check-in (accessible to all authenticated users)
+           {
+             path: 'qr-checkin',
+             element: <QRCheckIn />,
+           },
+           // USER accessible routes
            {
              path: 'kunjungan',
              element: <Kunjungan />,
@@ -74,6 +82,10 @@ const router = createBrowserRouter([
               {
                 path: 'items',
                 element: <Items />,
+              },
+              {
+                path: 'qr-codes',
+                element: <QRCodes />,
               },
             ],
           },

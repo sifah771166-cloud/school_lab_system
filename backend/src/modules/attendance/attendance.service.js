@@ -1,4 +1,5 @@
 const prisma = require('../../utils/prisma');
+const { emitAttendanceUpdate, emitLabCapacityUpdate } = require('../../socket/socket');
 
 // Get all kunjungan with optional search
 exports.getAll = async (user, search) => {
@@ -169,13 +170,13 @@ exports.getAllDepartmentsAttendance = async () => {
 
 // Create kunjungan
 exports.create = async (userId, data) => {
-  const { teacherName, classTeaching, startTime, endTime, date } = data;
+  const { teacherName, classTeaching, startTime, endTime, date, labId } = data;
   
   if (!teacherName || !classTeaching || !startTime || !endTime) {
     throw new Error('Semua field harus diisi');
   }
   
-  return prisma.attendance.create({
+  const attendance = await prisma.attendance.create({
     data: {
       userId,
       teacherName,
@@ -183,18 +184,64 @@ exports.create = async (userId, data) => {
       startTime,
       endTime,
       date: date || new Date().toISOString().split('T')[0],
+      ...(labId && { labId }),
+      checkInTime: new Date()
     },
     include: {
       user: {
         select: { id: true, name: true, email: true }
+      },
+      lab: {
+        select: { id: true, name: true, capacity: true }
       }
     }
   });
+
+  // Emit real-time attendance update
+  if (labId) {
+    try {
+      // Get current lab occupancy
+      const currentOccupancy = await prisma.attendance.count({
+        where: {
+          labId,
+          checkInTime: { not: null },
+          checkOutTime: null
+        }
+      });
+
+      emitAttendanceUpdate(labId, {
+        type: 'check-in',
+        userId,
+        userName: attendance.user.name,
+        teacherName,
+        classTeaching,
+        timestamp: attendance.checkInTime
+      });
+
+      // Emit lab capacity update
+      emitLabCapacityUpdate(labId, {
+        current: currentOccupancy,
+        capacity: attendance.lab?.capacity || 0,
+        percentage: attendance.lab?.capacity ? Math.round((currentOccupancy / attendance.lab.capacity) * 100) : 0
+      });
+    } catch (error) {
+      console.error('Failed to emit attendance update:', error);
+    }
+  }
+  
+  return attendance;
 };
 
 // Update kunjungan
 exports.update = async (id, user, data) => {
-  const kunjungan = await prisma.attendance.findUnique({ where: { id } });
+  const kunjungan = await prisma.attendance.findUnique({ 
+    where: { id },
+    include: {
+      lab: {
+        select: { id: true, name: true, capacity: true }
+      }
+    }
+  });
   
   if (!kunjungan) {
     throw new Error('Kunjungan tidak ditemukan');
@@ -216,23 +263,65 @@ exports.update = async (id, user, data) => {
     }
   }
   
-  const { teacherName, classTeaching, startTime, endTime, date } = data;
+  const { teacherName, classTeaching, startTime, endTime, date, checkOut } = data;
   
-  return prisma.attendance.update({
+  const updateData = {
+    teacherName,
+    classTeaching,
+    startTime,
+    endTime,
+    date: date || kunjungan.date,
+  };
+
+  // Handle check-out
+  if (checkOut && !kunjungan.checkOutTime) {
+    updateData.checkOutTime = new Date();
+  }
+
+  const updatedAttendance = await prisma.attendance.update({
     where: { id },
-    data: {
-      teacherName,
-      classTeaching,
-      startTime,
-      endTime,
-      date: date || kunjungan.date,
-    },
+    data: updateData,
     include: {
       user: {
         select: { id: true, name: true, email: true }
+      },
+      lab: {
+        select: { id: true, name: true, capacity: true }
       }
     }
   });
+
+  // Emit real-time update if check-out occurred
+  if (checkOut && kunjungan.labId) {
+    try {
+      // Get current lab occupancy
+      const currentOccupancy = await prisma.attendance.count({
+        where: {
+          labId: kunjungan.labId,
+          checkInTime: { not: null },
+          checkOutTime: null
+        }
+      });
+
+      emitAttendanceUpdate(kunjungan.labId, {
+        type: 'check-out',
+        userId: kunjungan.userId,
+        userName: updatedAttendance.user.name,
+        timestamp: updateData.checkOutTime
+      });
+
+      // Emit lab capacity update
+      emitLabCapacityUpdate(kunjungan.labId, {
+        current: currentOccupancy,
+        capacity: updatedAttendance.lab?.capacity || 0,
+        percentage: updatedAttendance.lab?.capacity ? Math.round((currentOccupancy / updatedAttendance.lab.capacity) * 100) : 0
+      });
+    } catch (error) {
+      console.error('Failed to emit attendance update:', error);
+    }
+  }
+  
+  return updatedAttendance;
 };
 
 // Delete kunjungan (admin only)

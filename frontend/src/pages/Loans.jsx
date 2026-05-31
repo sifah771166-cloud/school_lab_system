@@ -7,9 +7,12 @@ import PageHeader from '../components/ui/PageHeader';
 import SearchFilter from '../components/ui/SearchFilter';
 import StatusBadge from '../components/ui/StatusBadge';
 import { exportToCSV, printReport } from '../utils/export';
+import { useSocket } from '../context/SocketContext';
+import toast from 'react-hot-toast';
 
 export default function Loans() {
   const { user } = useAuth();
+  const { socket } = useSocket();
   const [loans, setLoans] = useState([]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -44,6 +47,33 @@ export default function Loans() {
     fetchItems();
   }, []);
 
+  // Listen for real-time loan updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleLoanUpdate = (loanData) => {
+      console.log('Loan update received:', loanData);
+      
+      // Show toast notification
+      const statusText = loanData.status === 'approved' ? 'disetujui' : 
+                        loanData.status === 'rejected' ? 'ditolak' : 
+                        loanData.status === 'returned' ? 'dikembalikan' : loanData.status;
+      
+      toast.success(`Peminjaman ${loanData.itemName} ${statusText}`, {
+        duration: 4000
+      });
+
+      // Refresh loans list
+      fetchLoans();
+    };
+
+    socket.on('loan:updated', handleLoanUpdate);
+
+    return () => {
+      socket.off('loan:updated', handleLoanUpdate);
+    };
+  }, [socket]);
+
   const fetchLoans = async () => {
     setLoading(true);
     try {
@@ -74,7 +104,10 @@ export default function Loans() {
     setMessage('');
 
     try {
-      await api.post('/loans', requestForm);
+      await api.post('/loans', {
+        ...requestForm,
+        borrowerName: user?.name || 'Unknown'
+      });
       setMessage('✅ Permintaan peminjaman berhasil diajukan!');
       setShowRequestForm(false);
       setRequestForm({
@@ -84,8 +117,10 @@ export default function Loans() {
         dueDate: '',
       });
       fetchLoans();
+      toast.success('Loan request submitted successfully');
     } catch (err) {
       setError(err.response?.data?.message || 'Gagal mengajukan peminjaman');
+      toast.error('Failed to submit loan request');
     } finally {
       setLoading(false);
     }

@@ -3,19 +3,43 @@ import useAuth from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import NotificationCenter from '../NotificationCenter';
 import api from '../../config/axios';
+import { useSocket } from '../../context/SocketContext';
+import toast from 'react-hot-toast';
 
 export default function Navbar({ onMenuClick }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { socket, isConnected, onlineUsers } = useSocket();
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     fetchUnreadCount();
-    const interval = setInterval(fetchUnreadCount, 30000);
-    return () => clearInterval(interval);
+    // Remove polling since we'll use WebSocket
   }, []);
+
+  // Listen for real-time notifications
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewNotification = (notification) => {
+      console.log('New notification received:', notification);
+      setUnreadCount(prev => prev + 1);
+      
+      // Show toast notification
+      toast.success(notification.title, {
+        description: notification.message,
+        duration: 4000
+      });
+    };
+
+    socket.on('notification:new', handleNewNotification);
+
+    return () => {
+      socket.off('notification:new', handleNewNotification);
+    };
+  }, [socket]);
 
   const fetchUnreadCount = async () => {
     try {
@@ -67,6 +91,14 @@ export default function Navbar({ onMenuClick }) {
 
         {/* Right: Notifications + Profile */}
         <div className="flex items-center gap-2">
+          {/* Connection Status Indicator */}
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-200">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+            <span className="text-xs text-gray-600 font-medium">
+              {isConnected ? `${onlineUsers} online` : 'Offline'}
+            </span>
+          </div>
+
           {/* Notification Bell */}
           <button
             onClick={() => setNotificationOpen(!notificationOpen)}
@@ -82,7 +114,11 @@ export default function Navbar({ onMenuClick }) {
             )}
           </button>
 
-          <NotificationCenter isOpen={notificationOpen} onClose={() => setNotificationOpen(false)} />
+          <NotificationCenter 
+            isOpen={notificationOpen} 
+            onClose={() => setNotificationOpen(false)}
+            onNotificationRead={() => setUnreadCount(prev => Math.max(0, prev - 1))}
+          />
 
           {/* Divider */}
           <div className="w-px h-8 bg-gray-200 hidden sm:block" />

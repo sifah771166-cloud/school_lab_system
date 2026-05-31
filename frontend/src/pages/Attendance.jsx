@@ -7,9 +7,12 @@ import PageHeader from '../components/ui/PageHeader';
 import SearchFilter from '../components/ui/SearchFilter';
 import StatusBadge from '../components/ui/StatusBadge';
 import { exportToCSV, printReport } from '../utils/export';
+import { useSocket } from '../context/SocketContext';
+import toast from 'react-hot-toast';
 
 export default function Attendance() {
   const { user } = useAuth();
+  const { socket } = useSocket();
   const [activeTab, setActiveTab] = useState('checkin');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -40,6 +43,9 @@ export default function Attendance() {
   const [departments, setDepartments] = useState([]);
   const [departmentLabsData, setDepartmentLabsData] = useState([]);
   const [allDepartmentsData, setAllDepartmentsData] = useState([]);
+  
+  // Lab capacity tracking
+  const [labCapacities, setLabCapacities] = useState({});
 
   const isAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN_JURUSAN';
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
@@ -54,6 +60,44 @@ export default function Attendance() {
       fetchDepartments();
     }
   }, []);
+
+  // Listen for real-time attendance updates
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleAttendanceUpdate = (data) => {
+      console.log('Attendance update received:', data);
+      
+      const actionText = data.type === 'check-in' ? 'check-in' : 'check-out';
+      toast.success(`${data.userName} ${actionText} di lab`, {
+        duration: 3000
+      });
+
+      // Refresh history
+      fetchHistory();
+    };
+
+    const handleLabCapacityUpdate = (data) => {
+      console.log('Lab capacity update:', data);
+      
+      setLabCapacities(prev => ({
+        ...prev,
+        [data.labId]: {
+          current: data.current,
+          capacity: data.capacity,
+          percentage: data.percentage
+        }
+      }));
+    };
+
+    socket.on('attendance:updated', handleAttendanceUpdate);
+    socket.on('lab:capacity', handleLabCapacityUpdate);
+
+    return () => {
+      socket.off('attendance:updated', handleAttendanceUpdate);
+      socket.off('lab:capacity', handleLabCapacityUpdate);
+    };
+  }, [socket]);
 
   const fetchLabs = async () => {
     try {

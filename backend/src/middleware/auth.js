@@ -14,8 +14,8 @@ const protect = async (req, res, next) => {
 
     const decoded = verifyToken(token);
     const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-      select: { id: true, email: true, role: true, departmentId: true },
+      where: { id: decoded.userId || decoded.id },
+      select: { id: true, email: true, name: true, role: true, departmentId: true },
     });
 
     if (!user) {
@@ -25,6 +25,7 @@ const protect = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
+    console.error('Auth error:', error.message);
     return res.status(401).json({ message: 'Invalid token. Please log in again.' });
   }
 };

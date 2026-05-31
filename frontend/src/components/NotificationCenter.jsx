@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../config/axios';
 import toast from 'react-hot-toast';
 
-export default function NotificationCenter({ isOpen, onClose }) {
+export default function NotificationCenter({ isOpen, onClose, onNotificationRead }) {
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -74,6 +74,9 @@ export default function NotificationCenter({ isOpen, onClose }) {
       await api.put(`/notifications/${notificationId}/read`);
       fetchNotifications();
       fetchUnreadCount();
+      if (onNotificationRead) {
+        onNotificationRead();
+      }
     } catch (error) {
       toast.error('Failed to mark as read');
     }

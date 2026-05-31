@@ -17,6 +17,8 @@ const loanRoutes = require('./modules/loans/loan.routes');
 const notificationRoutes = require('./modules/notifications/notification.routes');
 const searchRoutes = require('./modules/search/search.routes');
 const auditRoutes = require('./modules/audit/audit.routes');
+const qrRoutes = require('./modules/qr/qr.routes');
+const analyticsRoutes = require('./modules/analytics/analytics.routes');
 
 // Rate limiters
 const generalLimiter = rateLimit({
@@ -56,6 +58,8 @@ app.use('/api/v1/loans', loanRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
 app.use('/api/v1/search', searchRoutes);
 app.use('/api/v1/audit', auditRoutes);
+app.use('/api/v1/qr', qrRoutes);
+app.use('/api/v1/analytics', analyticsRoutes);
 
 // Health check
 app.get('/api/v1/health', (req, res) => res.status(200).json({ status: 'ok' }));
