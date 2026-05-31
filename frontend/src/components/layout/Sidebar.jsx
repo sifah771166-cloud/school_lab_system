@@ -17,6 +17,7 @@ const getNavigationByRole = (role) => {
   if (role === 'ADMIN_JURUSAN') {
     return [
       { name: 'Dashboard', href: '/', icon: '📊', gradient: 'from-blue-500 to-cyan-500' },
+      { name: 'Analytics', href: '/analytics', icon: '📈', gradient: 'from-cyan-500 to-blue-500' },
       { name: 'Kunjungan', href: '/kunjungan', icon: '👥', gradient: 'from-purple-500 to-pink-500' },
       { name: 'Peminjaman', href: '/loans', icon: '📋', gradient: 'from-green-500 to-teal-500' },
       { name: 'Labs', href: '/labs', icon: '🧪', gradient: 'from-orange-500 to-red-500' },
@@ -29,6 +30,7 @@ const getNavigationByRole = (role) => {
   if (role === 'SUPER_ADMIN') {
     return [
       { name: 'Dashboard', href: '/', icon: '📊', gradient: 'from-blue-500 to-cyan-500' },
+      { name: 'Analytics', href: '/analytics', icon: '📈', gradient: 'from-cyan-500 to-blue-500' },
       { name: 'Kunjungan', href: '/kunjungan', icon: '👥', gradient: 'from-purple-500 to-pink-500' },
       { name: 'Peminjaman', href: '/loans', icon: '📋', gradient: 'from-green-500 to-teal-500' },
       { name: 'Departments', href: '/departments', icon: '🏫', gradient: 'from-pink-500 to-rose-500' },

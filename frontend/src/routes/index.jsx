@@ -15,7 +15,6 @@ import Loans from '../pages/Loans';
 import Profile from '../pages/Profile';
 import Settings from '../pages/Settings';
 import Analytics from '../pages/Analytics';
-import SearchResults from '../pages/SearchResults';
 
 const router = createBrowserRouter([
   {
@@ -47,15 +46,11 @@ const router = createBrowserRouter([
              path: 'settings',
              element: <Settings />,
            },
-           {
-             path: 'analytics',
-             element: <Analytics />,
-           },
-           {
-             path: 'search',
-             element: <SearchResults />,
-           },
-           // USER accessible routes
+            {
+              path: 'analytics',
+              element: <Analytics />,
+            },
+            // USER accessible routes
            {
              path: 'kunjungan',
              element: <Kunjungan />,
