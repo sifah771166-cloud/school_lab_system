@@ -138,6 +138,10 @@ async function cacheFirstStrategy(request, cacheName) {
 self.addEventListener('sync', (event) => {
   console.log('[Service Worker] Background sync:', event.tag);
   
+  if (event.tag === 'sync-queue') {
+    event.waitUntil(syncQueue());
+  }
+  
   if (event.tag === 'sync-attendance') {
     event.waitUntil(syncAttendance());
   }
@@ -145,7 +149,135 @@ self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-loans') {
     event.waitUntil(syncLoans());
   }
+  
+  if (event.tag === 'sync-data') {
+    event.waitUntil(syncData());
+  }
 });
+
+// Handle push notifications
+self.addEventListener('push', (event) => {
+  console.log('[Service Worker] Push notification received');
+  
+  if (!event.data) {
+    console.log('[Service Worker] No data in push event');
+    return;
+  }
+
+  try {
+    const data = event.data.json();
+    event.waitUntil(
+      self.registration.showNotification(data.title || 'Notification', {
+        body: data.body,
+        icon: data.icon || '/icons/icon-192x192.png',
+        badge: data.badge || '/icons/icon-96x96.png',
+        data: data.data || {},
+        tag: data.tag || 'notification',
+        requireInteraction: data.requireInteraction || false,
+        actions: data.actions || []
+      })
+    );
+  } catch (error) {
+    console.error('[Service Worker] Error handling push:', error);
+    event.waitUntil(
+      self.registration.showNotification('Notification', {
+        body: event.data.text(),
+        icon: '/icons/icon-192x192.png'
+      })
+    );
+  }
+});
+
+// Handle notification clicks
+self.addEventListener('notificationclick', (event) => {
+  console.log('[Service Worker] Notification clicked');
+  event.notification.close();
+
+  const data = event.notification.data;
+  const action = event.action;
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window' }).then((clientList) => {
+      for (let i = 0; i < clientList.length; i++) {
+        if (clientList[i].url === '/' && 'focus' in clientList[i]) {
+          return clientList[i].focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(data.url || '/');
+      }
+    })
+  );
+});
+
+// Handle notification dismissal
+self.addEventListener('notificationclose', (event) => {
+  console.log('[Service Worker] Notification dismissed');
+});
+
+// Handle messages from main thread
+self.addEventListener('message', (event) => {
+  console.log('[Service Worker] Message received:', event.data.type);
+  
+  if (event.data.type === 'process-queue') {
+    event.waitUntil(syncQueue());
+  }
+  
+  if (event.data.type === 'clear-cache') {
+    event.waitUntil(clearOldCaches());
+  }
+  
+  if (event.data.type === 'update-sync-status') {
+    if (event.ports && event.ports[0]) {
+      event.ports[0].postMessage({
+        status: 'sync-completed',
+        timestamp: new Date().toISOString()
+      });
+    }
+  }
+});
+
+async function syncQueue() {
+  try {
+    console.log('[Service Worker] Syncing offline queue');
+    self.clients.matchAll().then(clients => {
+      clients.forEach(client => {
+        client.postMessage({
+          type: 'sync-queue-request'
+        });
+      });
+    });
+  } catch (error) {
+    console.error('[Service Worker] Error syncing queue:', error);
+  }
+}
+
+async function clearOldCaches() {
+  try {
+    const cacheNames = await caches.keys();
+    await Promise.all(
+      cacheNames.map(cacheName => {
+        if (cacheName !== CACHE_NAME && 
+            cacheName !== RUNTIME_CACHE && 
+            cacheName !== API_CACHE) {
+          return caches.delete(cacheName);
+        }
+      })
+    );
+    console.log('[Service Worker] Old caches cleared');
+  } catch (error) {
+    console.error('[Service Worker] Error clearing caches:', error);
+  }
+}
+
+async function syncData() {
+  try {
+    console.log('[Service Worker] Syncing general data');
+    await syncQueue();
+  } catch (error) {
+    console.error('[Service Worker] Error syncing data:', error);
+  }
+}
 
 async function syncAttendance() {
   try {
