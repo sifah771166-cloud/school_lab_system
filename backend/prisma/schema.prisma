@@ -32,6 +32,10 @@ model User {
   repairRequests   RepairRequest[]
   department       Department?        @relation(fields: [departmentId], references: [id])
 
+  @@index([email])
+  @@index([role])
+  @@index([departmentId])
+  @@index([createdAt])
   @@map("users")
 }
 
@@ -62,6 +66,8 @@ model Lab {
   teacher_qr_codes teacher_qr_codes[]
 
   @@unique([name, departmentId])
+  @@index([departmentId])
+  @@index([createdAt])
   @@map("labs")
 }
 
@@ -84,6 +90,10 @@ model Item {
   maintenanceRecords MaintenanceRecord[]
   repairRequests RepairRequest[]
 
+  @@index([labId])
+  @@index([category])
+  @@index([condition])
+  @@index([createdAt])
   @@map("items")
 }
 
@@ -100,6 +110,10 @@ model Schedule {
   creator   User     @relation("ScheduleCreator", fields: [createdBy], references: [id])
   lab       Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
 
+  @@index([labId])
+  @@index([date])
+  @@index([createdBy])
+  @@index([createdAt])
   @@map("schedules")
 }
 
@@ -120,6 +134,10 @@ model Attendance {
   lab           Lab?      @relation(fields: [labId], references: [id])
   user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([labId])
+  @@index([date])
+  @@index([createdAt])
   @@map("attendances")
 }
 
@@ -142,6 +160,12 @@ model Loan {
   item            Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
   user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+  @@index([itemId])
+  @@index([status])
+  @@index([approvedBy])
+  @@index([dueDate])
+  @@index([createdAt])
   @@map("loans")
 }
 

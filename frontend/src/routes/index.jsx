@@ -1,38 +1,60 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+
+// Layout components (loaded immediately)
 import DashboardLayout from '../components/layout/DashboardLayout';
 import ProtectedRoute from '../components/ProtectedRoute';
 import RoleProtectedRoute from '../components/RoleProtectedRoute';
-import Login from '../pages/Login';
-import Register from '../pages/Register';
-import Dashboard from '../pages/Dashboard';
-import NotFound from '../pages/NotFound';
-import Departments from '../pages/Departments';
-import Labs from '../pages/Labs';
-import Schedules from '../pages/Schedules';
-import Kunjungan from '../pages/Kunjungan';
-import Items from '../pages/Items';
-import Loans from '../pages/Loans';
-import Profile from '../pages/Profile';
-import Settings from '../pages/Settings';
-import Analytics from '../pages/Analytics';
-import AdvancedAnalytics from '../pages/AdvancedAnalytics';
-import QRCheckIn from '../pages/QRCheckIn';
-import QRCodes from '../pages/QRCodes';
-import TwoFactorSetup from '../pages/TwoFactorSetup';
-import TwoFactorVerify from '../pages/TwoFactorVerify';
+
+// Loading component
+const LoadingFallback = () => (
+  <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-900 via-blue-900 to-teal-900">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-white mx-auto mb-4"></div>
+      <p className="text-white text-lg">Loading...</p>
+    </div>
+  </div>
+);
+
+// Lazy load all pages
+const Login = lazy(() => import('../pages/Login'));
+const Register = lazy(() => import('../pages/Register'));
+const Dashboard = lazy(() => import('../pages/Dashboard'));
+const NotFound = lazy(() => import('../pages/NotFound'));
+const Departments = lazy(() => import('../pages/Departments'));
+const Labs = lazy(() => import('../pages/Labs'));
+const Schedules = lazy(() => import('../pages/Schedules'));
+const Kunjungan = lazy(() => import('../pages/Kunjungan'));
+const Items = lazy(() => import('../pages/Items'));
+const Loans = lazy(() => import('../pages/Loans'));
+const Profile = lazy(() => import('../pages/Profile'));
+const Settings = lazy(() => import('../pages/Settings'));
+const Analytics = lazy(() => import('../pages/Analytics'));
+const AdvancedAnalytics = lazy(() => import('../pages/AdvancedAnalytics'));
+const QRCheckIn = lazy(() => import('../pages/QRCheckIn'));
+const QRCodes = lazy(() => import('../pages/QRCodes'));
+const TwoFactorSetup = lazy(() => import('../pages/TwoFactorSetup'));
+const TwoFactorVerify = lazy(() => import('../pages/TwoFactorVerify'));
+
+// Wrapper component for Suspense
+const SuspenseWrapper = ({ children }) => (
+  <Suspense fallback={<LoadingFallback />}>
+    {children}
+  </Suspense>
+);
 
 const router = createBrowserRouter([
   {
     path: '/login',
-    element: <Login />,
+    element: <SuspenseWrapper><Login /></SuspenseWrapper>,
   },
   {
     path: '/register',
-    element: <Register />,
+    element: <SuspenseWrapper><Register /></SuspenseWrapper>,
   },
   {
     path: '/2fa-verify',
-    element: <TwoFactorVerify />,
+    element: <SuspenseWrapper><TwoFactorVerify /></SuspenseWrapper>,
   },
   {
     // Protected routes wrapper
@@ -44,38 +66,38 @@ const router = createBrowserRouter([
         children: [
            {
              index: true,
-             element: <Dashboard />,
+             element: <SuspenseWrapper><Dashboard /></SuspenseWrapper>,
            },
            // Profile and Settings (accessible to all authenticated users)
            {
              path: 'profile',
-             element: <Profile />,
+             element: <SuspenseWrapper><Profile /></SuspenseWrapper>,
            },
            {
              path: 'settings',
-             element: <Settings />,
+             element: <SuspenseWrapper><Settings /></SuspenseWrapper>,
            },
            {
              path: '2fa-setup',
-             element: <TwoFactorSetup />,
+             element: <SuspenseWrapper><TwoFactorSetup /></SuspenseWrapper>,
            },
            {
              path: 'analytics',
-             element: <AdvancedAnalytics />,
+             element: <SuspenseWrapper><AdvancedAnalytics /></SuspenseWrapper>,
            },
            // QR Check-in (accessible to all authenticated users)
            {
              path: 'qr-checkin',
-             element: <QRCheckIn />,
+             element: <SuspenseWrapper><QRCheckIn /></SuspenseWrapper>,
            },
            // USER accessible routes
            {
              path: 'kunjungan',
-             element: <Kunjungan />,
+             element: <SuspenseWrapper><Kunjungan /></SuspenseWrapper>,
            },
            {
              path: 'loans',
-             element: <Loans />,
+             element: <SuspenseWrapper><Loans /></SuspenseWrapper>,
            },
           // ADMIN_JURUSAN and SUPER_ADMIN only routes
           {
@@ -83,19 +105,19 @@ const router = createBrowserRouter([
             children: [
               {
                 path: 'labs',
-                element: <Labs />,
+                element: <SuspenseWrapper><Labs /></SuspenseWrapper>,
               },
               {
                 path: 'schedules',
-                element: <Schedules />,
+                element: <SuspenseWrapper><Schedules /></SuspenseWrapper>,
               },
               {
                 path: 'items',
-                element: <Items />,
+                element: <SuspenseWrapper><Items /></SuspenseWrapper>,
               },
               {
                 path: 'qr-codes',
-                element: <QRCodes />,
+                element: <SuspenseWrapper><QRCodes /></SuspenseWrapper>,
               },
             ],
           },
@@ -105,7 +127,7 @@ const router = createBrowserRouter([
             children: [
               {
                 path: 'departments',
-                element: <Departments />,
+                element: <SuspenseWrapper><Departments /></SuspenseWrapper>,
               },
             ],
           },
@@ -115,7 +137,7 @@ const router = createBrowserRouter([
   },
   {
     path: '*',
-    element: <NotFound />,
+    element: <SuspenseWrapper><NotFound /></SuspenseWrapper>,
   },
 ]);
 
