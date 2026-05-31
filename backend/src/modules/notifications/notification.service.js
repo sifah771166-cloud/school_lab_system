@@ -3,13 +3,13 @@ const emailService = require('../../utils/emailService');
 
 exports.getNotifications = async (userId, filters = {}) => {
   const where = { userId };
-  
-  if (filters.read !== undefined) {
-    where.read = filters.read;
+   
+  if (filters.isRead !== undefined) {
+    where.isRead = filters.isRead;
   }
-  
-  if (filters.category) {
-    where.category = filters.category;
+
+  if (filters.type) {
+    where.type = filters.type;
   }
 
   return prisma.notification.findMany({
@@ -23,7 +23,7 @@ exports.getUnreadCount = async (userId) => {
   return prisma.notification.count({
     where: {
       userId,
-      read: false,
+      isRead: false,
     },
   });
 };
@@ -35,8 +35,7 @@ exports.createNotification = async (userId, data) => {
       title: data.title,
       message: data.message,
       type: data.type || 'info',
-      category: data.category || 'general',
-      actionUrl: data.actionUrl,
+      link: data.actionUrl || data.link,
     },
   });
 
@@ -53,7 +52,6 @@ exports.createNotification = async (userId, data) => {
           title: data.title,
           message: data.message,
           type: data.type,
-          category: data.category,
           data: data.emailData,
         });
       }
@@ -81,8 +79,7 @@ exports.markAsRead = async (notificationId, userId) => {
   return prisma.notification.update({
     where: { id: notificationId },
     data: {
-      read: true,
-      readAt: new Date(),
+      isRead: true,
     },
   });
 };
@@ -91,11 +88,10 @@ exports.markAllAsRead = async (userId) => {
   return prisma.notification.updateMany({
     where: {
       userId,
-      read: false,
+      isRead: false,
     },
     data: {
-      read: true,
-      readAt: new Date(),
+      isRead: true,
     },
   });
 };
@@ -132,8 +128,7 @@ exports.sendNotificationToUsers = async (userIds, data) => {
       title: data.title,
       message: data.message,
       type: data.type || 'info',
-      category: data.category || 'general',
-      actionUrl: data.actionUrl,
+      link: data.actionUrl || data.link,
     })),
   });
 };

@@ -11,11 +11,12 @@ Sistem manajemen laboratorium sekolah yang modern, lengkap, dan mudah digunakan.
 3. [Instalasi Cepat](#-instalasi-cepat)
 4. [Struktur Project](#-struktur-project)
 5. [Role & Permissions](#-role--permissions)
-6. [Panduan Lengkap](#-panduan-lengkap)
-7. [API Documentation](#-api-documentation)
-8. [Deployment](#-deployment)
-9. [Testing](#-testing)
-10. [Troubleshooting](#-troubleshooting)
+6. [Kredensial Default](#-kredensial-default)
+7. [Panduan Lengkap](#-panduan-lengkap)
+8. [API Documentation](#-api-documentation)
+9. [Deployment](#-deployment)
+10. [Testing](#-testing)
+11. [Troubleshooting](#-troubleshooting)
 
 ---
 
@@ -150,6 +151,8 @@ school-lab-system/
 │   │   └── utils/              # Utilities
 │   ├── public/                 # Static files
 │   └── package.json
+├── information/                # Dokumentasi tambahan
+│   └── ACCOUNTS.md             # Informasi akun lengkap
 ├── docker-compose.yml          # Docker configuration
 ├── package.json                # Root package.json
 └── README.md                   # This file
@@ -188,6 +191,60 @@ school-lab-system/
 
 ---
 
+## 🔐 Kredensial Default
+
+> 📄 **Lihat informasi akun lengkap di:** [`information/ACCOUNTS.md`](information/ACCOUNTS.md)
+
+### Super Admin
+| Email | Password |
+|-------|----------|
+| `admin@school.com` | `superadmin123` |
+
+### Admin Jurusan (7 akun)
+| Jurusan | Email | Password |
+|---------|-------|----------|
+| TKJ | `admin.tkj@school.com` | `admintkj123` |
+| DKV | `admin.dkv@school.com` | `admindkv123` |
+| BD | `admin.bd@school.com` | `adminbd123` |
+| DPIB | `admin.dpib@school.com` | `admindpib123` |
+| TKR | `admin.tkr@school.com` | `admintkr123` |
+| TSM | `admin.tsm@school.com` | `admintsm123` |
+| Lab Umum | `admin.umum@school.com` | `adminumum123` |
+
+### User per Jurusan (19 akun)
+| Jurusan | Email | Password |
+|---------|-------|----------|
+| TKJ 1 | `usertkj1@school.com` | `usertkj1` |
+| TKJ 2 | `usertkj2@school.com` | `usertkj2` |
+| TKJ 3 | `usertkj3@school.com` | `usertkj3` |
+| TKJ 4 | `usertkj4@school.com` | `usertkj4` |
+| DKV 1 | `userdkv1@school.com` | `userdkv1` |
+| DKV 2 | `userdkv2@school.com` | `userdkv2` |
+| DKV 3 | `userdkv3@school.com` | `userdkv3` |
+| DKV 4 | `userdkv4@school.com` | `userdkv4` |
+| BD 1 | `userbd1@school.com` | `userbd1` |
+| BD 2 | `userbd2@school.com` | `userbd2` |
+| DPIB 1 | `userdpib1@school.com` | `userdpib1` |
+| DPIB 2 | `userdpib2@school.com` | `userdpib2` |
+| TKR 1 | `usertkr1@school.com` | `usertkr1` |
+| TKR 2 | `usertkr2@school.com` | `usertkr2` |
+| TKR 3 | `usertkr3@school.com` | `usertkr3` |
+| TKR 4 | `usertkr4@school.com` | `usertkr4` |
+| TSM 1 | `usertsm1@school.com` | `usertsm1` |
+| TSM 2 | `usertsm2@school.com` | `usertsm2` |
+| Umum 1 | `userumum1@school.com` | `userumum1` |
+| Umum 2 | `userumum2@school.com` | `userumum2` |
+
+### Ringkasan Total Akun
+| Role | Jumlah |
+|------|--------|
+| SUPER_ADMIN | 1 |
+| ADMIN_JURUSAN | 7 |
+| USER | 19 |
+| **Total** | **27** |
+
+---
+
 ## 📖 Panduan Lengkap
 
 ### 1. Environment Variables
@@ -208,7 +265,7 @@ JWT_EXPIRES_IN=7d
 # Frontend URL (for CORS)
 FRONTEND_URL=http://localhost:5173
 
-# Email (optional)
+# Email (optional - untuk email notifications)
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
@@ -233,7 +290,7 @@ npx prisma migrate deploy
 # Generate Prisma Client
 npx prisma generate
 
-# Seed initial data
+# Seed initial data (27 akun user, 7 departments, 20 labs, dll)
 npm run prisma:seed
 ```
 
@@ -387,32 +444,6 @@ docker-compose down
 
 ## 🧪 Testing
 
-### Default Test Accounts
-
-#### Super Admin
-```
-Email: admin@school.com
-Password: superadmin123
-```
-
-#### Admin Jurusan
-```
-TKJ: admin.tkj@school.com / admintkj123
-DKV: admin.dkv@school.com / admindkv123
-BD: admin.bd@school.com / adminbd123
-DPIB: admin.dpib@school.com / admindpib123
-TKR: admin.tkr@school.com / admintkr123
-TSM: admin.tsm@school.com / admintsm123
-UMUM: admin.umum@school.com / adminumum123
-```
-
-#### Regular Users
-```
-TKJ Users: usertkj1@school.com / usertkj1
-DKV Users: userdkv1@school.com / userdkv1
-(See seed.js for complete list)
-```
-
 ### Test Scenarios
 1. **Authentication** - Login dengan berbagai role
 2. **Data Isolation** - Pastikan user hanya lihat data jurusan sendiri
@@ -442,8 +473,8 @@ cd backend && npx prisma migrate reset --force
 ### Port Already in Use
 ```bash
 # Find process using port 5000
-lsof -i :5000        # Linux/Mac
-netstat -ano | findstr :5000  # Windows
+netstat -ano | findstr :5000    # Windows
+lsof -i :5000                   # Linux/Mac
 
 # Kill process atau ganti PORT di .env
 ```

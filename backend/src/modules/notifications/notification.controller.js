@@ -2,15 +2,15 @@ const service = require('./notification.service');
 
 exports.getNotifications = async (req, res, next) => {
   try {
-    const { read, category, limit } = req.query;
+    const { isRead, type, limit } = req.query;
     const filters = {};
     
-    if (read !== undefined) {
-      filters.read = read === 'true';
+    if (isRead !== undefined) {
+      filters.isRead = isRead === 'true';
     }
     
-    if (category) {
-      filters.category = category;
+    if (type) {
+      filters.type = type;
     }
     
     if (limit) {

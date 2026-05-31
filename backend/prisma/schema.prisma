@@ -1,64 +1,60 @@
-// This is a school laboratory management system
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  password      String
-  name          String
-  role          String   @default("USER") // USER, ADMIN_JURUSAN, SUPER_ADMIN
-  departmentId  String?
-  department    Department? @relation(fields: [departmentId], references: [id])
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  // Relations
-  attendances   Attendance[]
-  loans         Loan[]
-  loansApproved Loan[] @relation("LoanApprover")
-  schedulesCreated Schedule[] @relation("ScheduleCreator")
-  notifications Notification[]
-  auditLogs     AuditLog[]
-  sessions      Session[]
+  id               String             @id @default(uuid())
+  email            String             @unique
+  password         String
+  name             String
+  role             String             @default("USER")
+  departmentId     String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  profilePhoto     String?
+  attendances      Attendance[]
+  loansApproved    Loan[]             @relation("LoanApprover")
+  loans            Loan[]
+  notifications    Notification[]
+  schedulesCreated Schedule[]         @relation("ScheduleCreator")
+  teacher_qr_codes teacher_qr_codes[]
+  auditLogs        AuditLog[]
+  sessions         Session[]
+  department       Department?        @relation(fields: [departmentId], references: [id])
 
   @@map("users")
 }
 
 model Department {
-  id        String   @id @default(uuid())
-  name      String   @unique
+  id          String   @id @default(uuid())
+  name        String   @unique
   description String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
-  // Relations
-  users     User[]
-  labs      Lab[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  labs        Lab[]
+  users       User[]
 
   @@map("departments")
 }
 
 model Lab {
-  id            String   @id @default(uuid())
-  name          String
-  description   String?
-  capacity      Int      @default(0)
-  departmentId  String
-  department    Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
-  // Relations
-  items         Item[]
-  schedules     Schedule[]
-  attendances   Attendance[]
+  id               String             @id @default(uuid())
+  name             String
+  description      String?
+  departmentId     String
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  capacity         Int                @default(0)
+  attendances      Attendance[]
+  items            Item[]
+  department       Department         @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  schedules        Schedule[]
+  teacher_qr_codes teacher_qr_codes[]
 
   @@unique([name, departmentId])
   @@map("labs")
@@ -69,31 +65,29 @@ model Item {
   name        String
   description String?
   quantity    Int      @default(0)
-  category    String?  @default("general")
-  condition   String?  @default("good") // good, fair, poor
   labId       String
-  lab         Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
-  
-  // Relations
+  category    String?  @default("general")
+  condition   String?  @default("good")
+  lab         Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
   loans       Loan[]
 
   @@map("items")
 }
 
 model Schedule {
-  id        String    @id @default(uuid())
+  id        String   @id @default(uuid())
   labId     String
-  lab       Lab       @relation(fields: [labId], references: [id], onDelete: Cascade)
   title     String?
-  date      DateTime  // specific date (ignore time part)
-  startTime String    // "HH:mm"
-  endTime   String    // "HH:mm"
+  date      DateTime
+  startTime String
+  endTime   String
   createdBy String
-  creator   User      @relation("ScheduleCreator", fields: [createdBy], references: [id])
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  creator   User     @relation("ScheduleCreator", fields: [createdBy], references: [id])
+  lab       Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
 
   @@map("schedules")
 }
@@ -101,45 +95,41 @@ model Schedule {
 model Attendance {
   id            String    @id @default(uuid())
   userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  // Check-in/Check-out fields
-  labId         String?
-  lab           Lab?      @relation(fields: [labId], references: [id], onDelete: SetNull)
-  scheduleId    String?
-  checkInTime   DateTime?
-  checkOutTime  DateTime?
-  
-  // Kunjungan fields (for visit tracking)
-  teacherName   String?   // Nama guru yang mengajar
-  classTeaching String?   // Kelas yang diajar (e.g., "XII RPL 1")
-  startTime     String?   // Jam mulai (HH:MM format)
-  endTime       String?   // Jam selesai (HH:MM format)
-  date          String?   // Tanggal kunjungan (YYYY-MM-DD)
-  
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  classTeaching String?
+  date          String?
+  endTime       String?
+  startTime     String?
+  teacherName   String?
+  checkInTime   DateTime?
+  checkOutTime  DateTime?
+  labId         String?
+  scheduleId    String?
+  lab           Lab?      @relation(fields: [labId], references: [id])
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("attendances")
 }
 
 model Loan {
-  id          String    @id @default(uuid())
-  userId      String
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  itemId      String
-  item        Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  quantity    Int
-  status      String    @default("pending") // pending, approved, rejected, returned, overdue
-  requestNote String?
-  approvedBy  String?
-  approver    User?     @relation("LoanApprover", fields: [approvedBy], references: [id], onDelete: SetNull)
-  approvedAt  DateTime?
-  returnedAt  DateTime?
-  dueDate     DateTime?
+  id              String    @id @default(uuid())
+  userId          String
+  itemId          String
+  quantity        Int
+  status          String    @default("pending")
+  requestNote     String?
+  approvedBy      String?
+  approvedAt      DateTime?
+  returnedAt      DateTime?
+  dueDate         DateTime?
   rejectionReason String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  borrowerName    String
+  approver        User?     @relation("LoanApprover", fields: [approvedBy], references: [id])
+  item            Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("loans")
 }
@@ -147,36 +137,57 @@ model Loan {
 model Notification {
   id        String   @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
   message   String
-  type      String   @default("info") // info, success, warning, error
-  category  String   @default("general") // loan, attendance, schedule, system
-  read      Boolean  @default(false)
-  readAt    DateTime?
-  actionUrl String?
+  type      String   @default("info")
+  isRead    Boolean  @default(false)
+  link      String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([isRead])
+  @@index([userId])
   @@map("notifications")
 }
 
+model teacher_qr_codes {
+  id            String   @id
+  teacherId     String
+  labId         String
+  teacherName   String
+  classTeaching String
+  date          DateTime
+  startTime     String
+  endTime       String
+  qrCode        String
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime
+  labs          Lab      @relation(fields: [labId], references: [id], onDelete: Cascade)
+  users         User     @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([labId])
+  @@index([teacherId])
+  @@map("teacher_qr_codes")
+}
+
 model AuditLog {
-  id          String   @id @default(uuid())
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  action      String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, etc.
-  module      String   // users, labs, items, schedules, attendance, loans, etc.
-  entityId    String?  // ID of the affected entity
-  entityName  String?  // Name or title of the affected entity
-  oldValues   Json?    // Previous values (for UPDATE/DELETE)
-  newValues   Json?    // New values (for CREATE/UPDATE)
-  ipAddress   String?
-  userAgent   String?
-  description String?
-  status      String   @default("success") // success, failed
+  id           String   @id @default(uuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action       String
+  module       String
+  entityId     String?
+  entityName   String?
+  oldValues    Json?
+  newValues    Json?
+  ipAddress    String?
+  userAgent    String?
+  description  String?
+  status       String   @default("success")
   errorMessage String?
-  createdAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
 
   @@index([userId])
   @@index([action])
@@ -196,7 +207,7 @@ model Session {
   lastActivity DateTime @default(now())
   expiresAt    DateTime
   createdAt    DateTime @default(now())
-  
+
   @@index([userId])
   @@index([token])
   @@map("sessions")
