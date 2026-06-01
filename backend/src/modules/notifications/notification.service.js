@@ -2,6 +2,8 @@ const prisma = require('../../utils/prisma');
 const emailService = require('../../utils/emailService');
 const { emitNotificationToUser, emitNotificationToDepartment, emitNotificationToRole } = require('../../socket/socket');
 
+const pushSubscriptions = new Map();
+
 exports.getNotifications = async (userId, filters = {}) => {
   const where = { userId };
    
@@ -188,4 +190,42 @@ exports.sendNotificationToDepartment = async (departmentId, data) => {
   }
 
   return notifications;
+};
+
+exports.subscribePush = async (userId, subscription) => {
+  if (!subscription || !subscription.endpoint) {
+    throw new Error('Invalid subscription payload');
+  }
+
+  const userSubscriptions = pushSubscriptions.get(userId) || [];
+  const exists = userSubscriptions.some((s) => s.endpoint === subscription.endpoint);
+
+  if (!exists) {
+    userSubscriptions.push({
+      endpoint: subscription.endpoint,
+      keys: subscription.keys || {},
+      updatedAt: new Date().toISOString(),
+    });
+    pushSubscriptions.set(userId, userSubscriptions);
+  }
+
+  return {
+    subscribed: true,
+    total: userSubscriptions.length,
+  };
+};
+
+exports.unsubscribePush = async (userId, subscription) => {
+  if (!subscription || !subscription.endpoint) {
+    throw new Error('Invalid subscription payload');
+  }
+
+  const userSubscriptions = pushSubscriptions.get(userId) || [];
+  const filtered = userSubscriptions.filter((s) => s.endpoint !== subscription.endpoint);
+  pushSubscriptions.set(userId, filtered);
+
+  return {
+    unsubscribed: true,
+    total: filtered.length,
+  };
 };

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../config/axios';
 import useAuth from '../hooks/useAuth';
 import PageHeader from '../components/ui/PageHeader';
@@ -6,6 +6,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import ErrorMessage from '../components/ui/ErrorMessage';
 import SearchFilter from '../components/ui/SearchFilter';
 import { exportToCSV, printReport } from '../utils/export';
+import offlineQueueService from '../services/offlineQueueService';
 
 export default function Schedules() {
   const { user } = useAuth();
@@ -27,31 +28,33 @@ export default function Schedules() {
 
   const isAdmin = user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_JURUSAN';
 
-  const fetchSchedules = async () => {
+  const fetchSchedules = useCallback(async () => {
     try {
       const { data } = await api.get('/schedules');
       setSchedules(data.data || data.schedules || []);
       setError('');
-    } catch (err) {
+    } catch {
       setError('Failed to load schedules');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchLabs = async () => {
+  const fetchLabs = useCallback(async () => {
     try {
       const { data } = await api.get('/labs');
       setLabs(data.data || data.labs || []);
     } catch (err) {
       console.error('Failed to load labs:', err);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchSchedules();
-    fetchLabs();
-  }, []);
+    queueMicrotask(() => {
+      fetchSchedules();
+      fetchLabs();
+    });
+  }, [fetchSchedules, fetchLabs]);
 
   const openCreate = () => {
     setForm({ title: '', labId: '', date: '', startTime: '', endTime: '' });
@@ -78,9 +81,21 @@ export default function Schedules() {
     e.preventDefault();
     try {
       if (editData) {
-        await api.put(`/schedules/${editData.id}`, form);
+        const result = await offlineQueueService.put(`/api/v1/schedules/${editData.id}`, form, {
+          priority: 'normal',
+          retryable: true,
+        });
+        if (result?._queued) {
+          setError('Offline mode: perubahan jadwal dimasukkan ke antrean sinkronisasi.');
+        }
       } else {
-        await api.post('/schedules', form);
+        const result = await offlineQueueService.post('/api/v1/schedules', form, {
+          priority: 'normal',
+          retryable: true,
+        });
+        if (result?._queued) {
+          setError('Offline mode: jadwal baru dimasukkan ke antrean sinkronisasi.');
+        }
       }
       setModalOpen(false);
       fetchSchedules();
@@ -92,7 +107,13 @@ export default function Schedules() {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this schedule?')) return;
     try {
-      await api.delete(`/schedules/${id}`);
+      const result = await offlineQueueService.delete(`/api/v1/schedules/${id}`, {
+        priority: 'high',
+        retryable: true,
+      });
+      if (result?._queued) {
+        setError('Offline mode: hapus jadwal dimasukkan ke antrean sinkronisasi.');
+      }
       fetchSchedules();
     } catch (err) {
       setError(err.response?.data?.message || 'Delete failed');

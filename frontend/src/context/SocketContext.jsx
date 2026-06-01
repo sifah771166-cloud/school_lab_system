@@ -1,9 +1,9 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
-import toast from 'react-hot-toast';
 
 const SocketContext = createContext(null);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useSocket = () => {
   const context = useContext(SocketContext);
   if (!context) {
@@ -27,7 +27,10 @@ export const SocketProvider = ({ children }) => {
     }
 
     // Initialize socket connection
-    const socketInstance = io(import.meta.env.VITE_API_URL || 'http://localhost:5000', {
+    const base = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+    const socketServerUrl = base.replace(/\/api\/v1\/?$/, '');
+
+    const socketInstance = io(socketServerUrl, {
       auth: {
         token: token
       },
@@ -41,6 +44,7 @@ export const SocketProvider = ({ children }) => {
     socketInstance.on('connect', () => {
       console.log('✅ Connected to WebSocket server');
       setIsConnected(true);
+      setSocket(socketInstance);
     });
 
     socketInstance.on('disconnect', (reason) => {
@@ -73,8 +77,6 @@ export const SocketProvider = ({ children }) => {
     socketInstance.on('users:online', (data) => {
       setOnlineUsers(data.count);
     });
-
-    setSocket(socketInstance);
 
     // Cleanup on unmount
     return () => {

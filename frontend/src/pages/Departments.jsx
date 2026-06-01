@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import useAuth from '../hooks/useAuth';
 import api from '../config/axios';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import ErrorMessage from '../components/ui/ErrorMessage';
 import PageHeader from '../components/ui/PageHeader';
+import offlineQueueService from '../services/offlineQueueService';
 
 export default function Departments() {
   const { user } = useAuth();
@@ -17,11 +18,7 @@ export default function Departments() {
 
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
-  useEffect(() => {
-    fetchDepartments();
-  }, []);
-
-  const fetchDepartments = async () => {
+  const fetchDepartments = useCallback(async () => {
     try {
       setLoading(true);
       const response = await api.get('/departments');
@@ -32,7 +29,13 @@ export default function Departments() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      fetchDepartments();
+    });
+  }, [fetchDepartments]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -41,9 +44,21 @@ export default function Departments() {
 
     try {
       if (editingDept) {
-        await api.put(`/departments/${editingDept.id}`, formData);
+        const result = await offlineQueueService.put(`/api/v1/departments/${editingDept.id}`, formData, {
+          priority: 'normal',
+          retryable: true,
+        });
+        if (result?._queued) {
+          setError('Offline mode: perubahan jurusan dimasukkan ke antrean sinkronisasi.');
+        }
       } else {
-        await api.post('/departments', formData);
+        const result = await offlineQueueService.post('/api/v1/departments', formData, {
+          priority: 'normal',
+          retryable: true,
+        });
+        if (result?._queued) {
+          setError('Offline mode: jurusan baru dimasukkan ke antrean sinkronisasi.');
+        }
       }
       setShowModal(false);
       setFormData({ name: '', description: '' });
@@ -66,7 +81,13 @@ export default function Departments() {
     if (!confirm('Are you sure you want to delete this department?')) return;
 
     try {
-      await api.delete(`/departments/${id}`);
+      const result = await offlineQueueService.delete(`/api/v1/departments/${id}`, {
+        priority: 'high',
+        retryable: true,
+      });
+      if (result?._queued) {
+        setError('Offline mode: hapus jurusan dimasukkan ke antrean sinkronisasi.');
+      }
       fetchDepartments();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to delete department');

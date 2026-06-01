@@ -78,3 +78,23 @@ exports.deleteAllNotifications = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.subscribePush = async (req, res, next) => {
+  try {
+    const { subscription } = req.body;
+    const result = await service.subscribePush(req.user.id, subscription);
+    res.json({ message: 'Push subscription saved', data: result });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.unsubscribePush = async (req, res, next) => {
+  try {
+    const { subscription } = req.body;
+    const result = await service.unsubscribePush(req.user.id, subscription);
+    res.json({ message: 'Push subscription removed', data: result });
+  } catch (err) {
+    next(err);
+  }
+};

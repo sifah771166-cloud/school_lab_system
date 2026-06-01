@@ -16,20 +16,15 @@ export default function Analytics() {
     departmentStats: [],
   });
 
-  useEffect(() => {
-    fetchAnalyticsData();
-  }, []);
-
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true);
       
       // Fetch data dari berbagai endpoints
-      const [labs, items, loans, attendance] = await Promise.all([
+      const [labs, items, loans] = await Promise.all([
         api.get('/labs'),
         api.get('/items'),
         api.get('/loans/all'),
-        api.get('/attendance'),
       ]);
 
       // Process lab usage data
@@ -80,6 +75,11 @@ export default function Analytics() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchAnalyticsData();
+  }, []);
 
   const exportToPDF = async () => {
     try {

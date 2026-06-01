@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import useAuth from '../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import NotificationCenter from '../NotificationCenter';
@@ -14,10 +14,20 @@ export default function Navbar({ onMenuClick }) {
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const fetchUnreadCount = useCallback(async () => {
+    try {
+      const response = await api.get('/notifications/unread/count');
+      setUnreadCount(response.data.unreadCount);
+    } catch (error) {
+      console.error('Failed to fetch unread count:', error);
+    }
+  }, []);
+
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchUnreadCount();
     // Remove polling since we'll use WebSocket
-  }, []);
+  }, [fetchUnreadCount]);
 
   // Listen for real-time notifications
   useEffect(() => {
@@ -40,15 +50,6 @@ export default function Navbar({ onMenuClick }) {
       socket.off('notification:new', handleNewNotification);
     };
   }, [socket]);
-
-  const fetchUnreadCount = async () => {
-    try {
-      const response = await api.get('/notifications/unread/count');
-      setUnreadCount(response.data.unreadCount);
-    } catch (error) {
-      console.error('Failed to fetch unread count:', error);
-    }
-  };
 
   const handleLogout = () => {
     logout();

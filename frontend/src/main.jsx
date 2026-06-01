@@ -7,6 +7,7 @@ import './index.css';
 import router from './routes';
 import { AppProvider } from './context/AppContext';
 import { SocketProvider } from './context/SocketContext';
+import PWAInitializer from './components/PWAInitializer';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
@@ -14,6 +15,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <AuthProvider>
         <SocketProvider>
           <AppProvider>
+            <PWAInitializer />
             <RouterProvider router={router} />
           </AppProvider>
         </SocketProvider>

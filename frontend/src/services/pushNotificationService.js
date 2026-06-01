@@ -5,6 +5,11 @@
 
 import * as indexedDB from '../utils/indexedDB';
 
+const getApiOrigin = () => {
+  const base = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+  return base.replace(/\/api\/v1\/?$/, '');
+};
+
 class PushNotificationService {
   constructor() {
     this.registration = null;
@@ -177,7 +182,7 @@ class PushNotificationService {
    */
   async sendSubscriptionToServer(subscription) {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/v1/notifications/subscribe`, {
+      const response = await fetch(`${getApiOrigin()}/api/v1/notifications/subscribe`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -205,7 +210,7 @@ class PushNotificationService {
    */
   async sendUnsubscriptionToServer(subscription) {
     try {
-      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/v1/notifications/unsubscribe`, {
+      await fetch(`${getApiOrigin()}/api/v1/notifications/unsubscribe`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -282,31 +287,6 @@ class PushNotificationService {
   }
 
   /**
-   * Handle notification click (called from service worker)
-   */
-  handleNotificationClick(event) {
-    event.notification.close();
-
-    const data = event.notification.data;
-    
-    // Handle different notification types
-    if (data.action === 'open-url' && data.url) {
-      clients.matchAll({ type: 'window' }).then(clientList => {
-        for (let i = 0; i < clientList.length; i++) {
-          if (clientList[i].url === data.url && 'focus' in clientList[i]) {
-            return clientList[i].focus();
-          }
-        }
-        if (clients.openWindow) {
-          return clients.openWindow(data.url);
-        }
-      });
-    }
-
-    this.notifyListeners('notification-click', data);
-  }
-
-  /**
    * Get permission status
    */
   getPermissionStatus() {
@@ -317,7 +297,7 @@ class PushNotificationService {
   /**
    * Subscribe to events
    */
-  subscribe(callback) {
+  subscribeToEvents(callback) {
     this.listeners.push(callback);
     return () => {
       this.listeners = this.listeners.filter(l => l !== callback);
@@ -343,7 +323,7 @@ class PushNotificationService {
   urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64 = (base64String + padding)
-      .replace(/\-/g, '+')
+      .replace(/-/g, '+')
       .replace(/_/g, '/');
 
     const rawData = window.atob(base64);

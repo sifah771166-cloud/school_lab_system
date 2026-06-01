@@ -7,6 +7,7 @@ import ErrorMessage from '../components/ui/ErrorMessage';
 import SearchFilter from '../components/ui/SearchFilter';
 import { exportToCSV, printReport } from '../utils/export';
 import toast from 'react-hot-toast';
+import offlineQueueService from '../services/offlineQueueService';
 
 export default function Kunjungan() {
   const { user } = useAuth();
@@ -32,7 +33,7 @@ export default function Kunjungan() {
     fetchKunjungan();
   }, []);
 
-  const fetchKunjungan = async () => {
+  async function fetchKunjungan() {
     try {
       setLoading(true);
       const response = await api.get('/attendance');
@@ -44,17 +45,33 @@ export default function Kunjungan() {
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       if (editData) {
-        await api.put(`/attendance/${editData.id}`, form);
-        toast.success('Kunjungan berhasil diperbarui');
+        const result = await offlineQueueService.put(`/api/v1/attendance/${editData.id}`, form, {
+          priority: 'normal',
+          retryable: true,
+        });
+
+        if (result?._queued) {
+          toast.success('Offline: perubahan kunjungan dimasukkan ke antrean sinkronisasi');
+        } else {
+          toast.success('Kunjungan berhasil diperbarui');
+        }
       } else {
-        await api.post('/attendance', form);
-        toast.success('Kunjungan berhasil ditambahkan');
+        const result = await offlineQueueService.post('/api/v1/attendance', form, {
+          priority: 'normal',
+          retryable: true,
+        });
+
+        if (result?._queued) {
+          toast.success('Offline: kunjungan baru dimasukkan ke antrean sinkronisasi');
+        } else {
+          toast.success('Kunjungan berhasil ditambahkan');
+        }
       }
       fetchKunjungan();
       handleCloseModal();
@@ -67,8 +84,16 @@ export default function Kunjungan() {
     if (!window.confirm('Apakah Anda yakin ingin menghapus kunjungan ini?')) return;
     
     try {
-      await api.delete(`/attendance/${id}`);
-      toast.success('Kunjungan berhasil dihapus');
+      const result = await offlineQueueService.delete(`/api/v1/attendance/${id}`, {
+        priority: 'high',
+        retryable: true,
+      });
+
+      if (result?._queued) {
+        toast.success('Offline: penghapusan kunjungan dimasukkan ke antrean sinkronisasi');
+      } else {
+        toast.success('Kunjungan berhasil dihapus');
+      }
       fetchKunjungan();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Gagal menghapus kunjungan');

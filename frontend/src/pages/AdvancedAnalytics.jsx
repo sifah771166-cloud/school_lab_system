@@ -27,10 +27,6 @@ export default function AdvancedAnalytics() {
   const [loanStatus, setLoanStatus] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
 
-  useEffect(() => {
-    fetchAnalyticsData();
-  }, [dateRange]);
-
   const fetchAnalyticsData = async () => {
     try {
       setLoading(true);
@@ -66,7 +62,7 @@ export default function AdvancedAnalytics() {
       try {
         const deptRes = await api.get('/analytics/department-comparison', { params });
         setDepartmentComparison(deptRes.data.data);
-      } catch (err) {
+      } catch {
         // Not super admin, skip
         console.log('Department comparison not available');
       }
@@ -78,6 +74,11 @@ export default function AdvancedAnalytics() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect, react-hooks/exhaustive-deps
+    fetchAnalyticsData();
+  }, [dateRange]);
 
   const handleExportExcel = async () => {
     try {

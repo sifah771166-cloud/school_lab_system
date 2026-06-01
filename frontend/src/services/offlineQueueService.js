@@ -6,6 +6,16 @@
 import * as indexedDB from '../utils/indexedDB';
 import axios from 'axios';
 
+const getAuthHeaders = (headers = {}) => {
+  const token = localStorage.getItem('token');
+  if (!token) return headers;
+
+  return {
+    Authorization: `Bearer ${token}`,
+    ...headers,
+  };
+};
+
 class OfflineQueueService {
   constructor() {
     this.isOnline = navigator.onLine;
@@ -49,7 +59,7 @@ class OfflineQueueService {
         method,
         url: `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${endpoint}`,
         data,
-        headers: options.headers,
+        headers: getAuthHeaders(options.headers),
         timeout: options.timeout || 10000
       });
 
@@ -61,8 +71,10 @@ class OfflineQueueService {
 
       return response.data;
     } catch (error) {
-      // If offline and retryable, queue the request
-      if (!this.isOnline && retryable) {
+      const networkFailure = !error.response;
+
+      // If offline/network failure and retryable, queue the request
+      if ((!this.isOnline || networkFailure) && retryable) {
         console.log('Request queued for offline processing:', endpoint);
         const id = await indexedDB.addToQueue(method, data, endpoint, priority);
         
@@ -110,7 +122,7 @@ class OfflineQueueService {
    */
   async processQueue() {
     if (this.processing || !this.isOnline) {
-      return;
+      return { success: 0, failed: 0, skipped: true };
     }
 
     this.processing = true;
@@ -118,10 +130,11 @@ class OfflineQueueService {
 
     try {
       const queue = await indexedDB.getQueue();
+      this.notifyListeners('queue-processing', { total: queue.length });
       
       if (queue.length === 0) {
         this.notifyListeners('queue-processed', { success: 0, failed: 0 });
-        return;
+        return { success: 0, failed: 0 };
       }
 
       let successful = 0;
@@ -139,10 +152,11 @@ class OfflineQueueService {
           console.log('Processing queue item:', item.id, item.endpoint);
 
           // Make the request
-          const response = await axios({
+          await axios({
             method: item.action,
             url: `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}${item.endpoint}`,
             data: item.data,
+            headers: getAuthHeaders(),
             timeout: 15000
           });
 
@@ -190,9 +204,11 @@ class OfflineQueueService {
 
       console.log(`Queue processed: ${successful} successful, ${failed} failed`);
       this.notifyListeners('queue-processed', { success: successful, failed, failedItems });
+      return { success: successful, failed, failedItems };
     } catch (error) {
       console.error('Error processing queue:', error);
       this.notifyListeners('queue-error', { error: error.message });
+      throw error;
     } finally {
       this.processing = false;
     }

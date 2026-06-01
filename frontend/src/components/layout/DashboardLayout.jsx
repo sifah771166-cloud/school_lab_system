@@ -4,6 +4,7 @@ import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import PWAInstallPrompt from '../PWAInstallPrompt';
 import OfflineIndicator from '../OfflineIndicator';
+import SyncStatus from '../SyncStatus';
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -21,6 +22,7 @@ export default function DashboardLayout() {
       </div>
       
       <PWAInstallPrompt />
+      <SyncStatus />
     </div>
   );
 }

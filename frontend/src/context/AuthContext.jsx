@@ -1,28 +1,26 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useState } from 'react';
 import api from '../config/axios';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);  // initial auth check
-
-  // On mount, check localStorage for existing token / user
-  useEffect(() => {
+  const [user, setUser] = useState(() => {
     const token = localStorage.getItem('token');
     const storedUser = localStorage.getItem('user');
 
     if (token && storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        return JSON.parse(storedUser);
       } catch {
         // Corrupted data – clear it
         localStorage.removeItem('token');
         localStorage.removeItem('user');
       }
     }
-    setLoading(false);
-  }, []);
+    return null;
+  });
+
+  const [loading] = useState(false);
 
   const login = async (email, password) => {
     const { data } = await api.post('/auth/login', { email, password });

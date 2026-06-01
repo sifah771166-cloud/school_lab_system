@@ -7,6 +7,8 @@ const {
   markAllAsRead,
   deleteNotification,
   deleteAllNotifications,
+  subscribePush,
+  unsubscribePush,
 } = require('./notification.controller');
 
 const router = express.Router();
@@ -31,5 +33,9 @@ router.delete('/:id', deleteNotification);
 
 // Delete all notifications
 router.delete('/all', deleteAllNotifications);
+
+// Push subscription management
+router.post('/subscribe', subscribePush);
+router.post('/unsubscribe', unsubscribePush);
 
 module.exports = router;

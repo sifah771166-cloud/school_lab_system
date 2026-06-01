@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../config/axios';
 import useAuth from '../hooks/useAuth';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -9,6 +9,7 @@ import StatusBadge from '../components/ui/StatusBadge';
 import { exportToCSV, printReport } from '../utils/export';
 import { useSocket } from '../context/SocketContext';
 import toast from 'react-hot-toast';
+import offlineQueueService from '../services/offlineQueueService';
 
 export default function Loans() {
   const { user } = useAuth();
@@ -42,10 +43,35 @@ export default function Loans() {
     return matchesSearch && matchesStatus;
   });
 
-  useEffect(() => {
-    fetchLoans();
-    fetchItems();
+  const fetchLoans = useCallback(async () => {
+    setLoading(true);
+    try {
+      const endpoint = isAdmin ? '/loans/all' : '/loans/my';
+      const { data } = await api.get(endpoint);
+      setLoans(data.data || data.loans || []);
+      setError('');
+    } catch {
+      setError('Gagal memuat data peminjaman');
+    } finally {
+      setLoading(false);
+    }
+  }, [isAdmin]);
+
+  const fetchItems = useCallback(async () => {
+    try {
+      const { data } = await api.get('/items');
+      setItems(data.data || []);
+    } catch {
+      console.error('Failed to fetch items');
+    }
   }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      fetchLoans();
+      fetchItems();
+    });
+  }, [fetchLoans, fetchItems]);
 
   // Listen for real-time loan updates
   useEffect(() => {
@@ -72,30 +98,7 @@ export default function Loans() {
     return () => {
       socket.off('loan:updated', handleLoanUpdate);
     };
-  }, [socket]);
-
-  const fetchLoans = async () => {
-    setLoading(true);
-    try {
-      const endpoint = isAdmin ? '/loans/all' : '/loans/my';
-      const { data } = await api.get(endpoint);
-      setLoans(data.data || data.loans || []);
-      setError('');
-    } catch (err) {
-      setError('Gagal memuat data peminjaman');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchItems = async () => {
-    try {
-      const { data } = await api.get('/items');
-      setItems(data.data || []);
-    } catch (err) {
-      console.error('Failed to fetch items');
-    }
-  };
+  }, [socket, fetchLoans]);
 
   const handleRequest = async (e) => {
     e.preventDefault();
@@ -104,11 +107,23 @@ export default function Loans() {
     setMessage('');
 
     try {
-      await api.post('/loans', {
+      const payload = {
         ...requestForm,
         borrowerName: user?.name || 'Unknown'
+      };
+
+      const result = await offlineQueueService.post('/api/v1/loans', payload, {
+        priority: 'high',
+        retryable: true,
       });
-      setMessage('✅ Permintaan peminjaman berhasil diajukan!');
+
+      if (result?._queued) {
+        setMessage('🟡 Anda sedang offline. Permintaan peminjaman dimasukkan ke antrean sinkronisasi.');
+        toast.success('Offline: permintaan peminjaman dimasukkan ke antrean');
+      } else {
+        setMessage('✅ Permintaan peminjaman berhasil diajukan!');
+        toast.success('Loan request submitted successfully');
+      }
       setShowRequestForm(false);
       setRequestForm({
         itemId: '',
@@ -117,7 +132,6 @@ export default function Loans() {
         dueDate: '',
       });
       fetchLoans();
-      toast.success('Loan request submitted successfully');
     } catch (err) {
       setError(err.response?.data?.message || 'Gagal mengajukan peminjaman');
       toast.error('Failed to submit loan request');

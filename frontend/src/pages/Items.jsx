@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import api from '../config/axios';
 import useAuth from '../hooks/useAuth';
 import PageHeader from '../components/ui/PageHeader';
@@ -6,6 +6,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import ErrorMessage from '../components/ui/ErrorMessage';
 import SearchFilter from '../components/ui/SearchFilter';
 import { exportToCSV, printReport } from '../utils/export';
+import offlineQueueService from '../services/offlineQueueService';
 
 export default function Items() {
   const { user } = useAuth();
@@ -24,7 +25,7 @@ export default function Items() {
 
   const isAdmin = user.role === 'SUPER_ADMIN' || user.role === 'ADMIN_JURUSAN';
 
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
     try {
       setLoading(true);
       const { data } = await api.get('/items');
@@ -35,21 +36,23 @@ export default function Items() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchLabs = async () => {
+  const fetchLabs = useCallback(async () => {
     try {
       const { data } = await api.get('/labs');
       setLabs(data.data || data.labs || []);
-    } catch (err) {
+    } catch {
       console.error('Failed to load labs');
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchItems();
-    fetchLabs();
-  }, []);
+    queueMicrotask(() => {
+      fetchItems();
+      fetchLabs();
+    });
+  }, [fetchItems, fetchLabs]);
 
   const openCreate = () => {
     setForm({ name: '', description: '', quantity: 1, category: '', condition: 'good', labId: '' });
@@ -82,9 +85,21 @@ export default function Items() {
 
     try {
       if (editData) {
-        await api.put(`/items/${editData.id}`, form);
+        const result = await offlineQueueService.put(`/api/v1/items/${editData.id}`, form, {
+          priority: 'normal',
+          retryable: true,
+        });
+        if (result?._queued) {
+          setError('Offline mode: perubahan item dimasukkan ke antrean sinkronisasi.');
+        }
       } else {
-        await api.post('/items', form);
+        const result = await offlineQueueService.post('/api/v1/items', form, {
+          priority: 'normal',
+          retryable: true,
+        });
+        if (result?._queued) {
+          setError('Offline mode: item baru dimasukkan ke antrean sinkronisasi.');
+        }
       }
       setModalOpen(false);
       fetchItems();
@@ -98,7 +113,13 @@ export default function Items() {
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this item?')) return;
     try {
-      await api.delete(`/items/${id}`);
+      const result = await offlineQueueService.delete(`/api/v1/items/${id}`, {
+        priority: 'high',
+        retryable: true,
+      });
+      if (result?._queued) {
+        setError('Offline mode: hapus item dimasukkan ke antrean sinkronisasi.');
+      }
       fetchItems();
     } catch (err) {
       setError(err.response?.data?.message || 'Delete failed');
