@@ -5,6 +5,9 @@
 
 import * as indexedDB from '../utils/indexedDB';
 
+// VAPID public key from backend
+const VAPID_PUBLIC_KEY = 'BM-Lq6e0qZuj5XxlsjOUvNlyOVZLlVQxYEt44IpB8O1Sb-6TgKM3vkXq6geAISeUGNOiFOOGgdfU9K8ZbeD0et4';
+
 const getApiOrigin = () => {
   const base = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
   return base.replace(/\/api\/v1\/?$/, '');
@@ -85,7 +88,7 @@ class PushNotificationService {
   /**
    * Subscribe to push notifications
    */
-  async subscribe(vapidPublicKey) {
+  async subscribe(vapidPublicKey = VAPID_PUBLIC_KEY) {
     if (!this.supported || !this.registration) {
       console.warn('Cannot subscribe: Push not supported or SW not registered');
       return null;

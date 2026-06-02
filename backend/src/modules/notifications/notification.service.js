@@ -1,8 +1,7 @@
 const prisma = require('../../utils/prisma');
 const emailService = require('../../utils/emailService');
 const { emitNotificationToUser, emitNotificationToDepartment, emitNotificationToRole } = require('../../socket/socket');
-
-const pushSubscriptions = new Map();
+const { sendNotification, sendNotificationToMany } = require('../../config/webpush');
 
 exports.getNotifications = async (userId, filters = {}) => {
   const where = { userId };
@@ -197,21 +196,30 @@ exports.subscribePush = async (userId, subscription) => {
     throw new Error('Invalid subscription payload');
   }
 
-  const userSubscriptions = pushSubscriptions.get(userId) || [];
-  const exists = userSubscriptions.some((s) => s.endpoint === subscription.endpoint);
-
-  if (!exists) {
-    userSubscriptions.push({
+  // Save to database instead of in-memory Map
+  const saved = await prisma.pushSubscription.upsert({
+    where: { endpoint: subscription.endpoint },
+    update: {
+      p256dh: subscription.keys?.p256dh || '',
+      auth: subscription.keys?.auth || '',
+      updatedAt: new Date()
+    },
+    create: {
+      userId,
       endpoint: subscription.endpoint,
-      keys: subscription.keys || {},
-      updatedAt: new Date().toISOString(),
-    });
-    pushSubscriptions.set(userId, userSubscriptions);
-  }
+      p256dh: subscription.keys?.p256dh || '',
+      auth: subscription.keys?.auth || '',
+    }
+  });
+
+  const total = await prisma.pushSubscription.count({
+    where: { userId }
+  });
 
   return {
     subscribed: true,
-    total: userSubscriptions.length,
+    total,
+    subscription: saved
   };
 };
 
@@ -220,12 +228,74 @@ exports.unsubscribePush = async (userId, subscription) => {
     throw new Error('Invalid subscription payload');
   }
 
-  const userSubscriptions = pushSubscriptions.get(userId) || [];
-  const filtered = userSubscriptions.filter((s) => s.endpoint !== subscription.endpoint);
-  pushSubscriptions.set(userId, filtered);
+  // Delete from database
+  await prisma.pushSubscription.deleteMany({
+    where: {
+      userId,
+      endpoint: subscription.endpoint
+    }
+  });
+
+  const total = await prisma.pushSubscription.count({
+    where: { userId }
+  });
 
   return {
     unsubscribed: true,
-    total: filtered.length,
+    total
   };
+};
+
+// Send push notification to user
+exports.sendPushToUser = async (userId, payload) => {
+  // Get all subscriptions for user from database
+  const subscriptions = await prisma.pushSubscription.findMany({
+    where: { userId }
+  });
+
+  if (subscriptions.length === 0) {
+    return { sent: 0, failed: 0, results: [] };
+  }
+
+  const results = await Promise.allSettled(
+    subscriptions.map(async (sub) => {
+      try {
+        const subscription = {
+          endpoint: sub.endpoint,
+          keys: {
+            p256dh: sub.p256dh,
+            auth: sub.auth
+          }
+        };
+
+        await sendNotification(subscription, payload);
+        return { success: true, endpoint: sub.endpoint };
+      } catch (error) {
+        // Remove invalid subscriptions (410 Gone = subscription expired)
+        if (error.statusCode === 410) {
+          await prisma.pushSubscription.delete({
+            where: { id: sub.id }
+          });
+        }
+        return { success: false, error: error.message, endpoint: sub.endpoint };
+      }
+    })
+  );
+
+  const sent = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+  const failed = results.filter(r => r.status === 'rejected' || !r.value.success).length;
+
+  return { sent, failed, results };
+};
+
+// Send push notification to multiple users
+exports.sendPushToUsers = async (userIds, payload) => {
+  const results = await Promise.all(
+    userIds.map(userId => exports.sendPushToUser(userId, payload))
+  );
+
+  const totalSent = results.reduce((sum, r) => sum + r.sent, 0);
+  const totalFailed = results.reduce((sum, r) => sum + r.failed, 0);
+
+  return { sent: totalSent, failed: totalFailed, results };
 };

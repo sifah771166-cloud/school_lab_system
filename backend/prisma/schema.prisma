@@ -30,6 +30,7 @@ model User {
   sessions         Session[]
   maintenanceRecords MaintenanceRecord[] @relation("MaintenancePerformer")
   repairRequests   RepairRequest[]
+  pushSubscriptions PushSubscription[]
   department       Department?        @relation(fields: [departmentId], references: [id])
 
   @@index([email])
@@ -307,4 +308,19 @@ model BackupCode {
   @@index([userId])
   @@index([code])
   @@map("backup_codes")
+}
+
+model PushSubscription {
+  id        String   @id @default(uuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([endpoint])
+  @@map("push_subscriptions")
 }
